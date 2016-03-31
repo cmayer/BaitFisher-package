@@ -39,7 +39,7 @@
 #define DEBUG
 
 #define PROGNAME "Bait-Filter"
-#define VERSION  "1.0.4"
+#define VERSION  "1.0.5"
 
 extern faststring                       global_bait_filename;     //
 extern char                             global_mode;              //
