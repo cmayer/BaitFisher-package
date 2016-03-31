@@ -1,0 +1,43 @@
+### This is the parameter file of the BaitFisher program.
+#   In order to start BaitFisher with the set of parameters specified in this file
+#   navigate on the command line into the folder in which you want to start BaitFischer.
+#   Then type "BaitFischer parameterfile.txt" on the command line.
+
+#################################################################################################################################################
+# General parameters that are required:
+#################################################################################################################################################
+directory-transcript-files       	alignments
+bait-length                      	120 
+cluster-threshold                	0.15
+bait-offset                      	20
+bait-number			 	            7
+output-directory    		 	    BaitFisher-results 
+
+#################################################################################################################################################
+# General parameters that are optional:
+#################################################################################################################################################
+remove-reference-sequence		no  # yes/no
+alignment-cutting		        no  # yes/no
+
+
+# The required-taxonomic-groups-file parameter specifies the .....
+required-taxonomic-groups-string 
+
+#Optional, since default values are assumed if not specified by user:
+sequence-name-field-delimiter 		|    # Default: "|". Must be a single character
+sequence-name-taxon-field_number	2    # Default: 2		
+sequence-name-geneID-field_number	3    # Default: 3
+
+#################################################################################################################################################
+# If alignment-splitting is set to yes, the following program parameters have to be specified:
+#################################################################################################################################################
+#gff-file-reference-genome		
+#reference-genome-file           
+#reference-genome-name		 	
+
+#Optional, since default values are assumed if not specified by user:
+#gff-feature-name                        CDS        # Default: CDS
+#gff-record-attribute-name-for-geneID    Parent
+centroid-computation-mode               heuristic  # Default: heuristic
+verbosity								5          # Default: 5
+#################################################################################################################################################
