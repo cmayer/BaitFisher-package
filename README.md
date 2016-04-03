@@ -10,7 +10,7 @@ Furthermore, example analyses can be found in the Example folder.
 Online help for the BaitFisher and BaitFilter programs can be obtained by called he programs
 as follows:
 
-PATH/BaitFisher -h
+PATH/BaitFisher -h 
 PATH/BaitFileter -h
 
 
@@ -50,10 +50,10 @@ More content will me added soon.
 
 Author:
 -------
-Christoph Mayer
-Forschungsmuseum Alexander Koenig
-53123 Bonn
-Germany
+Christoph Mayer 
+Forschungsmuseum Alexander Koenig 
+53123 Bonn 
+Germany 
 
 
 Last updated: April 4th, 2016 by Christoph Mayer
