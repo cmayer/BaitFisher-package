@@ -20,9 +20,9 @@ Germany
 
 **Main contributors:**
 The main contributors to the development of the BaitFisher software are:  
-Christoph Mayer (*), Oliver Niehuis (*), Manuala Sann (*,**)  
-(*): Forschungsmuseum Alexander Koenig, 53113 Bonn, Germany  
-(**): Museum für Naturkunde, Berlin, Germnay.  
+Christoph Mayer (\*), Oliver Niehuis (\*), Manuala Sann (\*,\*\*)  
+(\*): Forschungsmuseum Alexander Koenig, 53113 Bonn, Germany  
+(\*\*): Museum für Naturkunde, Berlin, Germnay.  
 
 
 **When using BaitFisher please cite:**   
