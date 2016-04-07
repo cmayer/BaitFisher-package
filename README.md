@@ -1,17 +1,5 @@
-BaitFisher-package: Design DNA hybrid enrichment baits
+﻿BaitFisher-package: Design DNA hybrid enrichment baits
 ======================================================
-
-Documentation
--------------
-
-A full manual for the BaitFisher package can be found in the "Documentation" folder.
-Furthermore, example analyses can be found in the Example folder.
-
-Online help for the BaitFisher and BaitFilter programs can be obtained by called he programs
-as follows:
-
-PATH/BaitFisher -h  
-PATH/BaitFileter -h
 
 
 About the BaitFisher package
@@ -24,14 +12,33 @@ BaitFilter was designed (i) to determine whether baits bind unspecifically to a 
 
 Since performance was one of the major design goals, the BaitFisher and BaitFilter programs are both written in C++. 
 
-**Author:**   
+**Software development:**   
 Christoph Mayer, 
 Forschungsmuseum Alexander Koenig, 
-53123 Bonn, 
+53113 Bonn, 
 Germany
 
+**Main contributors:**
+The main contributors to the development of the BaitFisher software are:  
+Christoph Mayer (*), Oliver Niehuis (*), Manuala Sann (*,**)  
+(*): Forschungsmuseum Alexander Koenig, 53113 Bonn, Germany  
+(**): Museum für Naturkunde, Berlin, Germnay.  
+
+
 **When using BaitFisher please cite:**   
-Mayer, C., Sann, M., Donath, A., Meixner, M., Podsiadlowski, L., Peters, R.S., Petersen, M., Meusemann, K., Liere, K., W�gele, J.-W., Misof, B., Bleidorn, C., Ohl, M., Niehuis, O., 2016. BaitFisher: A Software Package for Multispecies Target DNA Enrichment Probe Design. Mol. Biol. Evol. doi:10.1093/molbev/msw056
+Mayer, C., Sann, M., Donath, A., Meixner, M., Podsiadlowski, L., Peters, R.S., Petersen, M., Meusemann, K., Liere, K., Wägele, J.-W., Misof, B., Bleidorn, C., Ohl, M., Niehuis, O., 2016. BaitFisher: A Software Package for Multispecies Target DNA Enrichment Probe Design. Mol. Biol. Evol. doi:10.1093/molbev/msw056
+
+Documentation
+-------------
+
+A full manual for the BaitFisher package can be found in the "Documentation" folder.
+Furthermore, example analyses can be found in the Example folder.
+
+Online help for the BaitFisher and BaitFilter programs can be obtained by called he programs
+as follows:
+
+PATH/BaitFisher -h  
+PATH/BaitFileter -h
 
 
 
