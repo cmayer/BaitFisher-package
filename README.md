@@ -20,7 +20,7 @@ Germany
 
 **Main contributors:**
 The main contributors to the development of the BaitFisher software are:  
-Christoph Mayer (\*), Oliver Niehuis (\*), Manuala Sann (\*,\*\*)  
+Christoph Mayer (\*), Oliver Niehuis (\*), Manuela Sann (\*,\*\*)  
 (\*): Forschungsmuseum Alexander Koenig, 53113 Bonn, Germany  
 (\*\*): Museum für Naturkunde, Berlin, Germnay.  
 
@@ -31,7 +31,7 @@ Mayer, C., Sann, M., Donath, A., Meixner, M., Podsiadlowski, L., Peters, R.S., P
 Documentation
 -------------
 
-A full manual for the BaitFisher package can be found in the "Documentation" folder.
+A full manual for the BaitFisher package as PDF can be found in the "Documentation" folder.
 Furthermore, example analyses can be found in the Example folder.
 
 Online help for the BaitFisher and BaitFilter programs can be obtained by called he programs
@@ -58,8 +58,7 @@ On the command line enter the BaitFisher-package-master directory. Now type make
 Quickstart
 ----------
 More content will me added soon.
+For details please see the manual in the "Documentation" folder.
 
-
-
->Last updated: April 4th, 2016 by Christoph Mayer
+>Last updated: July 14th, 2016 by Christoph Mayer
 
