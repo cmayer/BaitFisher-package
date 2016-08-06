@@ -73,7 +73,7 @@ Frequently asked questions  <a id="Frequently-aksed-questions"></a>
 --------------------------
 1. **BaitFisher does not design baits for all input files or all excised features. What is the reason for this?**
 
-   BaitFisher does not design baits for input files which cannot host a tiling design of the required length.
+   BaitFisher does not design baits for input files or excised features, which cannot host a tiling design of the required length.
 
 
 2. **How can I determine the input files or excised features for which no baits have been designed?**
