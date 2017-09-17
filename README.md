@@ -78,7 +78,7 @@ Frequently asked questions  <a id="Frequently-aksed-questions"></a>
 
 2. **How can I determine the input files or excised features for which no baits have been designed?**
 
-   There are multple reasons and therefore multiple messages why no baits have been designed for a given input file or excised feature.
+   There are different reasons and therefore different messages why no baits have been designed for a given input file or excised feature.
    A full list of the messages written to the screen (i.e. to standard output) and the underlying problem are listed here:
 
 >  **Message:**    
@@ -90,16 +90,16 @@ Frequently asked questions  <a id="Frequently-aksed-questions"></a>
    Be sure that decreasing the size of the tiling design makes sense.
 
 >  **Message 1:**    
-   *ALERT: Skipping <feature name> feature since its overlap with the transcript is too short. Length of overlap: a-number*   
+   *ALERT: Skipping feature-name feature since its overlap with the transcript is too short. Length of overlap: a-number*   
    **Message 2:**    
-   *ALERT: Skipping <feature name> feature since the alignment is tool short after removing gap only positions. Length of overlap: a-number*   
+   *ALERT: Skipping feature-name feature since the alignment is too short after removing gap only positions. Length of overlap: a-number*   
    **Reason:**     
    The feature, the transcript or only the overlap of the two are too short to host a complete tiling design.   
    **Solution:**   
    If the size of the requested tiling design is decreased, it might be possible to design baits for this feature.   
 
 >  **Message:**   
-   *ALERT: Alignment contains ... features but no single valid bait region. (Details: see above.)*   
+   *ALERT: Alignment contains #number features but no single valid bait region. (Details: see above.)*   
    **Reason:**   
    This message hints at the avbove messages.
 
@@ -123,6 +123,47 @@ Frequently asked questions  <a id="Frequently-aksed-questions"></a>
    If the size of the requested tiling design is decreased, it might be possible to design baits for this feature.
    If required taxa are removed,  it might be possible to design baits for this features.
 
+>  **Message:**   
+   *WARNING: For gene " gene-name " no entries where found in the gff file.   
+             While this is possible, in most cases the reason is either a wrong attribute name for the   
+	     gene-name-field in the gff-file or the gene name specified in the sequence   
+	     name of the transcript alignment is incompatible to the gene names in the gff file.   
+	     It is recommended to check whether gene name " gene-name " occurs in the   
+	     gff file under the attribute name " the-gff-record-attribute-name-for-geneID ".   
+	     Note that the gene name as specified in the sequence name and the gene name in   
+	     the gff file have to match exactly. The attribute name specified in the parameter    
+	     file must be an exact (case insensitive) match to the attribute name in the gff file.*   
+    **Reason:**    
+    This message can only occur if features are excised from genes/alignments. In the configuration file the
+    user specifies which attribute contains the gene name. A gff file contains lines of features. Each line has
+    nine tab delimited columns. The last column contains the so called attributes. E.g. "Parent=FBtr0081133".
+    If BaitFisher found a gene name in the sequence name in the alignment file, it will search for all features
+    that belong to this gene. The features are identified by the gene name saved in an attribute.
+    If for a given gene name no entry is found in the gff file, this is in most cases due to a nameing problem,
+    or incompatibility of the gene names and the gff file. If no features with the given gene name are found,
+    no baits will be designed for this gene.
+   **Solution:**   
+   Search for the gene-name given in the error message und verify that it can be found in the gff file.
+   Make sure it can be found under the  the-gff-record-attribute-name-for-geneID specified in the configuration file.
+   In most cases this name is "parent".
+
+>  **Message:**   
+   *WARNING: For gene " gene-name " no entries where found in the gff file that matched the specified feature name. 
+	     Since entries for this gene name have been found, but with different feature names, the problem could be the feature name 
+	     or the fact that features exist for this gene.*
+    **Reason:**    
+    Here BaitFisher found entries with gene-name for the given attribute name, but they could not be found for the feaute
+    that was specified.   
+   **Solution:**   
+   Have a closer look at the lines containing the features you want to excise. If you want to excise CDS features
+   look at lines in the gff file containing this feature and check that the gene name is found under the correct attribute name.
+   Note that different features often have different attribute names for the name of the gene.
+   E.g. the gene or mRNA feature usually does not mention the gene name under the attribute name parent, but under the attribute name ID
+   since these features have no parent features. In contrast, the exon, CDS or intron features are usually
+   assigned to a parent gene and the attribute containing the gene name is often the parent attribute.
+   Check that the given gene-name is found for at least one feature of the given type (e.g. CDS) under
+   the specified attribute. If the gene name does not occur at all double check that the gff file and
+   the genome file are compatible and that the gene name has been determined correctly.
 
 
 2. **How can I determine the input files or excised features for which baits have been designed?**
@@ -130,7 +171,7 @@ Frequently asked questions  <a id="Frequently-aksed-questions"></a>
    The bait-loci.txt file list all bait regions for which baits have been designed. The first column in this file is the alignment file name.
    The second column is the gene name if applicalble, or again the alignment file name if no features have been excised.
 
-   On Unix system such as Linux or Mac, the number of unique filenames, gene names, or features can be easily determined on the command line:
+   On Unix system such as Linux or Mac, the unique filenames, gene names, or features can be easily determined on the command line:
    In order to determine the alignment files for which baits have been designed you can use:   
    tail -n +2  loci_baits.txt | cut -f 1 | sort -u
 

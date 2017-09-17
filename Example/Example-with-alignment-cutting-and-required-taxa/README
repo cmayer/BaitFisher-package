@@ -1,0 +1,10 @@
+Example with alignemnt cutting:
+
+This is a small example with alignment cutting.
+
+Alignment cutting requires a whole genome and an annotation file.
+These are usually very large, so I extracted only a few scaffolds and the relevant parts of the
+annotation to the files in the Nvit-genome folder.
+
+With the latest version of BaitFisher, the example analysis can be run with the command in the
+runner file. 

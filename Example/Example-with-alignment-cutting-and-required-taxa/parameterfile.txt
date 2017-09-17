@@ -1,0 +1,43 @@
+### This is the parameter file of the BaitFisher program.
+#   In order to start BaitFisher with the set of parameters specified in this file
+#   navigate on the command line into the folder in which you want to start BaitFischer.
+#   Then type "BaitFischer parameterfile.txt" on the command line.
+
+#################################################################################################################################################
+# General parameters that are required:
+#################################################################################################################################################
+directory-transcript-files       	alignments
+bait-length                      	120
+cluster-threshold                	0.15
+bait-offset                      	20
+bait-number			 				3
+output-directory    		 		BaitFisher-results 
+
+#################################################################################################################################################
+# General parameters that are optional:
+#################################################################################################################################################
+remove-reference-sequence		yes  # yes/no
+alignment-cutting		        yes  # yes/no
+
+
+# The required-taxonomic-groups-file parameter specifies the .....
+required-taxonomic-groups-string (Podalonia_hirsuta),(Isodontia_mexicana,Prionyx_kirbii,Sphex_funerarius),(Sceliphron_curvatum,Chalybion_californicum),(Dinetus_pictus),(Alysson_spinosus),(Nysson_niger),(Gorytes_laticinctus,Harpactus_elegans,Sphecius_convallis),(Stizoides_tridentatus),(Bembix_rostrata),(Oxybelus_bipunctatus),(Crabro_peltarius,Crossocerus_quadrimaculatus),(Philanthus_triangulum),(Cerceris_arenaria),(Tachysphex_fulvitarsis),(Trypoxylon_figulus),(Diodontus_minutus,Pemphredon_lugens),(Psenulus_fuscipennis)
+
+
+#Optional, since default values are assumed if not specified by user:
+sequence-name-field-delimiter 	|    # Default: "|". Must be a single character
+sequence-name-taxon-field_number	3    # Default: 2		
+sequence-name-geneID-field_number	4    # Default: 3
+
+#################################################################################################################################################
+# If alignment-splitting is set to yes, the following program parameters have to be specified:
+#################################################################################################################################################
+gff-file-reference-genome		Nvit-genome/Nvit_OGSv1.2_reduced.gff2
+reference-genome-file           Nvit-genome/Nvit_1.0_scaffolds_reduced.fa
+reference-genome-name		 	Nasonia_vitripennis
+
+#Optional, since default values are assumed if not specified by user:
+gff-feature-name			CDS       # Default: CDS
+gff-record-attribute-name-for-geneID    GenePrediction
+centroid-computation-mode               heuristic  # Default: heuristic
+#################################################################################################################################################

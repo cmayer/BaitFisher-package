@@ -1,0 +1,179 @@
+Welcome to the BaitFisher program, version 1.2.6
+
+This software and any of its components are copyright protected by the authors
+Christoph Mayer and Oliver Niehuis, Zoologisches Forschungsmuseum Alexander
+Koenig, Bonn, Germany. Copyright 2014.
+This software is distributed as working material within a workshop given by
+Manuela Sann and Oliver Niehuis at the Australian National University, Canberra.
+As long as it is not published, the software may only be used for the purposes of
+the workshop or with explicit permission of one of the authors.
+Redistribution as source code in part or in whole or in binary form is not permitted.
+The software comes without warranty of any kind.
+
+PROGRAM has been started with the following parameters:
+Alignment cutting                             yes
+Name of gff file:                             Nvit-genome/Nvit_OGSv1.2_reduced.gff2
+Name of genome file:                          Nvit-genome/Nvit_1.0_scaffolds_reduced.fa
+Name of genome:                               Nasonia_vitripennis
+GFF feature to be excised from sequences:     CDS
+GFF record attribute name for geneID:         GenePrediction
+String with required taxonomic groups:        (Podalonia_hirsuta),(Isodontia_mexicana,Prionyx_kirbii,Sphex_funerarius),(Sceliphron_curvatum,Chalybion_californicum),(Dinetus_pictus),(Alysson_spinosus),(Nysson_niger),(Gorytes_laticinctus,Harpactus_elegans,Sphecius_convallis),(Stizoides_tridentatus),(Bembix_rostrata),(Oxybelus_bipunctatus),(Crabro_peltarius,Crossocerus_quadrimaculatus),(Philanthus_triangulum),(Cerceris_arenaria),(Tachysphex_fulvitarsis),(Trypoxylon_figulus),(Diodontus_minutus,Pemphredon_lugens),(Psenulus_fuscipennis)
+Name of directory with transcriptome files:   alignments
+Cluster threshold:                            0.15
+Bait length:                                  120
+Bait offset (for multiple baits in region):   20
+Bait number (for multiple baits in region):   3
+Output directory:                             BaitFisher-results
+Remove refernce species from alignment:       yes
+sequence_name_field_delimiter (default "|") |
+Number of taxon field in sequence name:       3
+Number of geneID field in sequence name:      4
+Center computation mode:                      heuristic
+Verbosity:                                    5
+
+INFORMATION: Could not find the file with alignment parameters: simpledna_N0.mat
+The following default values will be assumed as alignment parameters:
+Gap openening penalty:       0
+Gap extension penalty:      -3
+Match score:                 1
+Mismatch score:             -2
+Score against N:             0
+Scores against other ambigs: match or mismatch score
+Parsing the gff file ... Done.
+Reading the genome file ...Done.
+PROGRESS: 2017-06-07 13:35:56 Genome file has been read.
+PROGRESS: 2017-06-07 13:35:56 Reading alignemnt file (1/5): alignments/EOG5B2RVS.linsi.nt_without_bees_ants_rmgo.fas
+PROGRESS:  Working with gene: NV16710-RA 1/7 found in genome at SCAFFOLD42 1871783 1871919
+NOTICE: Skipping CDS feature alignment in NV16710-RA with number 1/7 in NV16710-RA since it is too short. Alignment length: 137. Minimum length: 160
+PROGRESS:  Working with gene: NV16710-RA 2/7 found in genome at SCAFFOLD42 1872301 1872892
+PROGRESS: 2017-06-07 13:35:57 Percent done this alignment or gene: 9%.
+PROGRESS: 2017-06-07 13:35:57 Percent done this alignment or gene: 19%.
+PROGRESS: 2017-06-07 13:35:57 Percent done this alignment or gene: 29%.
+PROGRESS: 2017-06-07 13:35:57 Percent done this alignment or gene: 39%.
+PROGRESS: 2017-06-07 13:35:57 Percent done this alignment or gene: 49%.
+PROGRESS: 2017-06-07 13:35:57 Percent done this alignment or gene: 59%.
+PROGRESS: 2017-06-07 13:35:57 Percent done this alignment or gene: 69%.
+PROGRESS: 2017-06-07 13:35:57 Percent done this alignment or gene: 79%.
+PROGRESS: 2017-06-07 13:35:57 Percent done this alignment or gene: 89%.
+PROGRESS: 2017-06-07 13:35:57 Percent done this alignment or gene: 99%.
+PROGRESS:  Working with gene: NV16710-RA 3/7 found in genome at SCAFFOLD42 1872965 1873300
+PROGRESS: 2017-06-07 13:35:57 Percent done this alignment or gene: 9%.
+PROGRESS: 2017-06-07 13:35:57 Percent done this alignment or gene: 19%.
+PROGRESS: 2017-06-07 13:35:57 Percent done this alignment or gene: 29%.
+PROGRESS: 2017-06-07 13:35:57 Percent done this alignment or gene: 38%.
+PROGRESS: 2017-06-07 13:35:57 Percent done this alignment or gene: 48%.
+PROGRESS: 2017-06-07 13:35:57 Percent done this alignment or gene: 58%.
+PROGRESS: 2017-06-07 13:35:57 Percent done this alignment or gene: 68%.
+PROGRESS: 2017-06-07 13:35:57 Percent done this alignment or gene: 77%.
+PROGRESS: 2017-06-07 13:35:57 Percent done this alignment or gene: 87%.
+PROGRESS: 2017-06-07 13:35:57 Percent done this alignment or gene: 97%.
+PROGRESS:  Working with gene: NV16710-RA 4/7 found in genome at SCAFFOLD42 1873377 1873442
+NOTICE: Skipping CDS feature alignment in NV16710-RA with number 4/7 in NV16710-RA since it is too short. Alignment length: 66. Minimum length: 160
+PROGRESS:  Working with gene: NV16710-RA 5/7 found in genome at SCAFFOLD42 1873527 1873749
+PROGRESS: 2017-06-07 13:35:57 Percent done this alignment or gene: 9%.
+PROGRESS: 2017-06-07 13:35:57 Percent done this alignment or gene: 19%.
+PROGRESS: 2017-06-07 13:35:57 Percent done this alignment or gene: 29%.
+PROGRESS: 2017-06-07 13:35:57 Percent done this alignment or gene: 38%.
+PROGRESS: 2017-06-07 13:35:57 Percent done this alignment or gene: 48%.
+PROGRESS: 2017-06-07 13:35:57 Percent done this alignment or gene: 58%.
+PROGRESS: 2017-06-07 13:35:57 Percent done this alignment or gene: 67%.
+PROGRESS: 2017-06-07 13:35:57 Percent done this alignment or gene: 77%.
+PROGRESS: 2017-06-07 13:35:57 Percent done this alignment or gene: 87%.
+PROGRESS: 2017-06-07 13:35:57 Percent done this alignment or gene: 97%.
+PROGRESS:  Working with gene: NV16710-RA 6/7 found in genome at SCAFFOLD42 1873834 1874002
+ALERT: No valid bait regions found for feature: NV16710-RA 6/7
+PROGRESS:  Working with gene: NV16710-RA 7/7 found in genome at SCAFFOLD42 1874080 1874149
+NOTICE: Skipping CDS feature alignment in NV16710-RA with number 7/7 in NV16710-RA since it is too short. Alignment length: 70. Minimum length: 160
+NOTE: Alignment contains 7 features, of which 3 have at least one valid bait region.
+PROGRESS: 2017-06-07 13:35:57 Reading alignemnt file (2/5): alignments/EOG5B2RVT.linsi.nt_without_bees_ants_rmgo.fas
+PROGRESS:  Working with gene: NV18410-RA 1/6 found in genome at SCAFFOLD188 48838 48923
+NOTICE: Skipping CDS feature alignment in NV18410-RA with number 1/6 in NV18410-RA since it is too short. Alignment length: 86. Minimum length: 160
+PROGRESS:  Working with gene: NV18410-RA 2/6 found in genome at SCAFFOLD188 49006 49464
+ALERT: No valid bait regions found for feature: NV18410-RA 2/6
+PROGRESS:  Working with gene: NV18410-RA 3/6 found in genome at SCAFFOLD188 49558 49788
+ALERT: No valid bait regions found for feature: NV18410-RA 3/6
+PROGRESS:  Working with gene: NV18410-RA 4/6 found in genome at SCAFFOLD188 50604 50888
+ALERT: No valid bait regions found for feature: NV18410-RA 4/6
+PROGRESS:  Working with gene: NV18410-RA 5/6 found in genome at SCAFFOLD188 50966 51131
+ALERT: No valid bait regions found for feature: NV18410-RA 5/6
+PROGRESS:  Working with gene: NV18410-RA 6/6 found in genome at SCAFFOLD188 51214 51363
+NOTICE: Skipping CDS feature alignment in NV18410-RA with number 6/6 in NV18410-RA since it is too short. Alignment length: 150. Minimum length: 160
+ALERT: Alignment contains 6 features but no single valid bait region. (Details: see above.)
+PROGRESS: 2017-06-07 13:35:57 Reading alignemnt file (3/5): alignments/EOG5ZPCSX.linsi.nt_without_bees_ants_rmgo.fas
+PROGRESS:  Working with gene: NV13708-RA 1/3 found in genome at SCAFFOLD14 3092403 3092478
+NOTICE: Skipping CDS feature alignment in NV13708-RA with number 1/3 in NV13708-RA since it is too short. Alignment length: 76. Minimum length: 160
+PROGRESS:  Working with gene: NV13708-RA 2/3 found in genome at SCAFFOLD14 3092626 3092963
+PROGRESS: 2017-06-07 13:35:57 Percent done this alignment or gene: 9%.
+PROGRESS: 2017-06-07 13:35:57 Percent done this alignment or gene: 19%.
+PROGRESS: 2017-06-07 13:35:57 Percent done this alignment or gene: 29%.
+PROGRESS: 2017-06-07 13:35:57 Percent done this alignment or gene: 38%.
+PROGRESS: 2017-06-07 13:35:58 Percent done this alignment or gene: 48%.
+PROGRESS: 2017-06-07 13:35:58 Percent done this alignment or gene: 58%.
+PROGRESS: 2017-06-07 13:35:58 Percent done this alignment or gene: 67%.
+PROGRESS: 2017-06-07 13:35:58 Percent done this alignment or gene: 77%.
+PROGRESS: 2017-06-07 13:35:58 Percent done this alignment or gene: 87%.
+PROGRESS: 2017-06-07 13:35:58 Percent done this alignment or gene: 96%.
+PROGRESS:  Working with gene: NV13708-RA 3/3 found in genome at SCAFFOLD14 3093079 3094365
+PROGRESS: 2017-06-07 13:35:58 Percent done this alignment or gene: 9%.
+PROGRESS: 2017-06-07 13:35:58 Percent done this alignment or gene: 19%.
+PROGRESS: 2017-06-07 13:35:58 Percent done this alignment or gene: 29%.
+PROGRESS: 2017-06-07 13:35:58 Percent done this alignment or gene: 39%.
+PROGRESS: 2017-06-07 13:35:58 Percent done this alignment or gene: 49%.
+PROGRESS: 2017-06-07 13:35:58 Percent done this alignment or gene: 59%.
+PROGRESS: 2017-06-07 13:35:58 Percent done this alignment or gene: 69%.
+PROGRESS: 2017-06-07 13:35:58 Percent done this alignment or gene: 79%.
+PROGRESS: 2017-06-07 13:35:58 Percent done this alignment or gene: 89%.
+PROGRESS: 2017-06-07 13:35:58 Percent done this alignment or gene: 99%.
+NOTE: Alignment contains 3 features, of which 2 have at least one valid bait region.
+PROGRESS: 2017-06-07 13:35:59 Reading alignemnt file (4/5): alignments/EOG5ZPCT0.linsi.nt_without_bees_ants_rmgo.fas
+PROGRESS:  Working with gene: NV11525-RA 1/2 found in genome at SCAFFOLD4 3975384 3976592
+PROGRESS: 2017-06-07 13:35:59 Percent done this alignment or gene: 9%.
+PROGRESS: 2017-06-07 13:35:59 Percent done this alignment or gene: 19%.
+PROGRESS: 2017-06-07 13:35:59 Percent done this alignment or gene: 29%.
+PROGRESS: 2017-06-07 13:35:59 Percent done this alignment or gene: 39%.
+PROGRESS: 2017-06-07 13:35:59 Percent done this alignment or gene: 49%.
+PROGRESS: 2017-06-07 13:35:59 Percent done this alignment or gene: 59%.
+PROGRESS: 2017-06-07 13:35:59 Percent done this alignment or gene: 69%.
+PROGRESS: 2017-06-07 13:35:59 Percent done this alignment or gene: 79%.
+PROGRESS: 2017-06-07 13:35:59 Percent done this alignment or gene: 89%.
+PROGRESS: 2017-06-07 13:35:59 Percent done this alignment or gene: 99%.
+PROGRESS:  Working with gene: NV11525-RA 2/2 found in genome at SCAFFOLD4 3977689 3977706
+NOTICE: Skipping CDS feature alignment in NV11525-RA with number 2/2 in NV11525-RA since it is too short. Alignment length: 18. Minimum length: 160
+NOTE: Alignment contains 2 features, of which 1 have at least one valid bait region.
+PROGRESS: 2017-06-07 13:35:59 Reading alignemnt file (5/5): alignments/EOG5ZW48P.linsi.nt_without_bees_ants_rmgo.fas
+PROGRESS:  Working with gene: NV13720-RA 1/12 found in genome at SCAFFOLD14 3243871 3244028
+NOTICE: Skipping CDS feature alignment in NV13720-RA with number 1/12 in NV13720-RA since it is too short. Alignment length: 158. Minimum length: 160
+PROGRESS:  Working with gene: NV13720-RA 2/12 found in genome at SCAFFOLD14 3245535 3245701
+ALERT: No valid bait regions found for feature: NV13720-RA 2/12
+PROGRESS:  Working with gene: NV13720-RA 3/12 found in genome at SCAFFOLD14 3254088 3254228
+NOTICE: Skipping CDS feature alignment in NV13720-RA with number 3/12 in NV13720-RA since it is too short. Alignment length: 141. Minimum length: 160
+PROGRESS:  Working with gene: NV13720-RA 4/12 found in genome at SCAFFOLD14 3269767 3270109
+PROGRESS: 2017-06-07 13:36:00 Percent done this alignment or gene: 9%.
+PROGRESS: 2017-06-07 13:36:00 Percent done this alignment or gene: 19%.
+PROGRESS: 2017-06-07 13:36:00 Percent done this alignment or gene: 29%.
+PROGRESS: 2017-06-07 13:36:00 Percent done this alignment or gene: 39%.
+PROGRESS: 2017-06-07 13:36:00 Percent done this alignment or gene: 49%.
+PROGRESS: 2017-06-07 13:36:00 Percent done this alignment or gene: 59%.
+PROGRESS: 2017-06-07 13:36:00 Percent done this alignment or gene: 69%.
+PROGRESS: 2017-06-07 13:36:00 Percent done this alignment or gene: 78%.
+PROGRESS: 2017-06-07 13:36:00 Percent done this alignment or gene: 88%.
+PROGRESS: 2017-06-07 13:36:00 Percent done this alignment or gene: 98%.
+PROGRESS:  Working with gene: NV13720-RA 5/12 found in genome at SCAFFOLD14 3270634 3270758
+NOTICE: Skipping CDS feature alignment in NV13720-RA with number 5/12 in NV13720-RA since it is too short. Alignment length: 125. Minimum length: 160
+PROGRESS:  Working with gene: NV13720-RA 6/12 found in genome at SCAFFOLD14 3270843 3271110
+ALERT: No valid bait regions found for feature: NV13720-RA 6/12
+PROGRESS:  Working with gene: NV13720-RA 7/12 found in genome at SCAFFOLD14 3271211 3271402
+ALERT: No valid bait regions found for feature: NV13720-RA 7/12
+PROGRESS:  Working with gene: NV13720-RA 8/12 found in genome at SCAFFOLD14 3271481 3271624
+NOTICE: Skipping CDS feature alignment in NV13720-RA with number 8/12 in NV13720-RA since it is too short. Alignment length: 144. Minimum length: 160
+PROGRESS:  Working with gene: NV13720-RA 9/12 found in genome at SCAFFOLD14 3271814 3271910
+NOTICE: Skipping CDS feature alignment in NV13720-RA with number 9/12 in NV13720-RA since it is too short. Alignment length: 97. Minimum length: 160
+PROGRESS:  Working with gene: NV13720-RA 10/12 found in genome at SCAFFOLD14 3271989 3272147
+NOTICE: Skipping CDS feature alignment in NV13720-RA with number 10/12 in NV13720-RA since it is too short. Alignment length: 159. Minimum length: 160
+PROGRESS:  Working with gene: NV13720-RA 11/12 found in genome at SCAFFOLD14 3273982 3274458
+ALERT: No valid bait regions found for feature: NV13720-RA 11/12
+PROGRESS:  Working with gene: NV13720-RA 12/12 found in genome at SCAFFOLD14 3276550 3276609
+NOTICE: Skipping CDS feature alignment in NV13720-RA with number 12/12 in NV13720-RA since it is too short. Alignment length: 60. Minimum length: 160
+NOTE: Alignment contains 12 features, of which 1 have at least one valid bait region.
+PROGRESS: Bait-Fisher handled 5 alignment files.
+Bait-Fisher finished without errors.
