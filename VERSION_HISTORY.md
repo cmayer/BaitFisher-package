@@ -8,7 +8,7 @@ BaitFisher version 1.2.7:
 *   First public release
 
 BaitFisher version 1.2.8:	
-*   New g++ (GNU c++) compilers are more restrictive than older versions. The code has been changed to work with newer compilers.
+*   New g++ (GNU c++) compilers are more restrictive than older versions. The code has been changed to work with newer compilers. These changes should not influence results.
 *   Typos have been removed in the screen output as well is in the manual.
 
 
