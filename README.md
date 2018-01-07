@@ -29,9 +29,9 @@ Germany
 
 **Main contributors:**
 The main contributors to the development of the BaitFisher software are:  
-Christoph Mayer (\*), Oliver Niehuis (\*), Manuela Sann (\*,\*\*)  
+Christoph Mayer (\*), Oliver Niehuis (\*\*,\*), Manuela Sann (\*\*,\*)  
 (\*): Forschungsmuseum Alexander Koenig, 53113 Bonn, Germany  
-(\*\*): Museum für Naturkunde, Berlin, Germnay.  
+(\*\*): Institut für Biologie I (Zoologie), Albert-Ludwigs-Universität Freiburg, Germany 
 
 
 **When using BaitFisher please cite:**   
@@ -186,5 +186,5 @@ Frequently asked questions  <a id="Frequently-aksed-questions"></a>
 
 In case of questions not answered here, please contact the author Christoph Mayer.
 
->Last updated: August 5th, 2016 by Christoph Mayer
+>Last updated: September, 2017 by Christoph Mayer
 

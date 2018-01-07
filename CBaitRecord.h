@@ -1,5 +1,6 @@
-/*  BaitFisher (version 1.2.7) a program for designing DNA target enrichment baits
- *  Copyright 2013-2016 by Christoph Mayer
+/*  BaitFisher (version 1.2.8) a program for designing DNA target enrichment baits
+ *  BaitFilter (version 1.0.6) a program for selecting optimal bait regions
+ *  Copyright 2013-2017 by Christoph Mayer
  *
  *  This source file is part of the BaitFisher-package.
  * 
@@ -24,6 +25,8 @@
  *  Mayer et al. 2016: BaitFisher: A software package for multi-species target DNA enrichment probe design
  *  
  */
+// Uses modified comparison functions to make sort stable.
+
 #include <iostream>
 #include <fstream>
 #include "faststring2.h"
@@ -33,7 +36,12 @@
 #include "print_container.h"
 #include "CBlastParser.h"
 
-
+// Introducing this define has several advantages:
+// - simple switch to stable_sort and back
+// - simple find all calls to sort in this file.
+#define MYSORT  sort
+// Instead of using stable_sort we now use modified comparison functions. So this switch should not be necessary any more.
+// #define MYSORT  stable_sort
 
 class CBaitRegionSelectorSets
 {
@@ -78,18 +86,18 @@ class CBaitRegionSelectorSets
   {
     os << "Selector string (alignment) argument:" << std::endl;
     print_container(os, set_of_alignment_names, "", "\n" , "\n");
-    os << "Selector string (alignment) arument, unsigned (feature number): " << std::endl;
+    os << "Selector string (alignment) argument, unsigned (feature number): " << std::endl;
     print_container(os, set_of_alignment_names_feature_num, "", "\n" , "\n");
-    os << "Selector string (alignment) arument, unsigned (feature number), unsigned (start): " << std::endl;
+    os << "Selector string (alignment) argument, unsigned (feature number), unsigned (start): " << std::endl;
     print_container(os, set_of_alignment_name_feature_num_start__ie_locus, "", "\n" , "\n");
   }
 
-  void print_num_genes_num_features(std::ostream &os, const char *s) const
+  void print_num_genes_num_features(std::ostream &os, const char *s, bool print_num_featues) const
   {
-    os << s << "Bait regions have been determined for this number of different:" << std::endl;
-    os << s << "Alignment files                                             " << set_of_alignment_names.size() << std::endl;
-    os << s << "Feature (is identical to number of files if not applicable: " << set_of_alignment_names_feature_num.size() << std::endl;
-    os << s << "Bait regions:                                               " << set_of_alignment_name_feature_num_start__ie_locus.size() << std::endl;
+    os << s << "The bait regions belong to this number of alignment files: " << set_of_alignment_names.size() << std::endl;
+    os << s << "Number of bait regions:                                    " << set_of_alignment_name_feature_num_start__ie_locus.size() << std::endl;
+    if (print_num_featues)
+      os << s << "Number of features                                       " << set_of_alignment_names_feature_num.size() << std::endl;
   }
 };
 
@@ -106,10 +114,15 @@ class CBait
   {
     faststring pre, post1, post2;
 
+    // The error messages below could be improved. It would be a good idea to tell the user the line in the file which causes the error.
+    // At the moment the user is being told the bait string or the number that causes the problem. While this should help in most cases to find the problem
+    // it would be much more convenient for the user to have the line number in the file.
+
     str.divide_at(' ', pre, post2);
     if (!pre.isAnUnsigned())
     {
-      std::cerr << "Baits are preceeded by a number indicating the index of the tiling design column. This number could not be found for the following bait:"
+      std::cerr << "Error when parsing the bait file: Has it been edited manually?" << std::endl;
+      std::cerr << "Before each bait string BaitFilter expects a number indicating the index of the tiling design column. This number could not be found for the following bait:"
 		<< std::endl;
       std::cerr << str << std::endl;
       std::cerr << "Exiting." << std::endl;
@@ -121,7 +134,8 @@ class CBait
     post1.divide_at(' ', pre, post2);
     if (!pre.isADouble())
     {
-      std::cerr << "Baits are proceeded by two double numbers containing the CG content and the maximum distance in its cluster.\n"
+      std::cerr << "Error when parsing the bait file: Has it been edited manually?" << std::endl;
+      std::cerr << "After each bait string BaitFilter expects two double numbers containing the baits' CG content and its maximum distance to the MSA.\n"
 		<< "Expecting a double number for the CG content but found: " << pre 
 		<< std::endl;
       std::cerr << "Exiting." << std::endl;
@@ -129,7 +143,8 @@ class CBait
     }
     if (!post2.isADouble())
     {
-      std::cerr << "Baits are proceeded by two double numbers containing the CG content and the maximum distance in its cluster.\n"
+      std::cerr << "Error when parsing the bait file: Has it been edited manually?" << std::endl;
+      std::cerr << "After each bait string BaitFilter expects two double numbers containing the baits' CG content and its maximum distance in the MSA.\n"
 		<< "Expecting a double number for the distance value but found: " << post2 
 		<< std::endl;
       std::cerr << "Exiting." << std::endl;
@@ -179,15 +194,17 @@ bool gene_name__feature_num_greaterThanCBaitLocus(CBaitLocus *a, CBaitLocus *b);
 
 bool gene_name__feature_num_lessThanOrEqualCBaitLocus(CBaitLocus *a, CBaitLocus *b);
 
-bool seq_name__feature_num_start_lessThanCBaitLocus(CBaitLocus *a, CBaitLocus *b);
+// bool original_file_name__feature_num_start_lessThanCBaitLocus(CBaitLocus *a, CBaitLocus *b);
 
 bool locus_start_lessThanCBaitLocus(CBaitLocus *a, CBaitLocus *b);
 
 
+// Information about a bait region, i.e. a locus with a tiling design and its baits.
+// Basically this is the information stored in one line of a BaitFisher output file.
 
 class CBaitLocus
 {
-  faststring seq_name;
+  faststring original_file_name;
   faststring gene_name;
   unsigned   feature_num;
   unsigned   num_features;
@@ -234,7 +251,7 @@ class CBaitLocus
     container[7].removeSpacesFront();
     container[7].removeSpacesBack();
 
-    seq_name                = container[0];
+    original_file_name      = container[0];
     gene_name               = container[1];
     feature_num             = container[2].ToUnsigned();
     num_features            = container[3].ToUnsigned();
@@ -293,9 +310,14 @@ class CBaitLocus
     }
   }
 
-  faststring &get_seq_name()
+  bool has_feature_information()
   {
-    return seq_name;
+    return (num_features == 0);
+  }
+
+  faststring &get_original_file_name()
+  {
+    return original_file_name;
   }
 
   const faststring &get_gene_name() const
@@ -355,11 +377,11 @@ class CBaitLocus
 
   faststring get_bait_region_name_string()
   {
-    return seq_name + "|" + gene_name + "|" + faststring(feature_num) + "|" + faststring(start);
+    return original_file_name + "|" + gene_name + "|" + faststring(feature_num) + "|" + faststring(start);
   }
 
   // TODO: Change this to FILE * instead of using ostream.
-  // Known formats are 'f', 's' for the 2 paramter version of this function.
+  // Known formats are 'f', 's' for the 2 parameter version of this function.
   void print(std::ostream &os, char format)
   {
     std::vector<CBait *>::iterator i1, i2, i3;
@@ -371,7 +393,7 @@ class CBaitLocus
 
     if (format == 'f') // fasta
     {
-      //      name = ">" + seq_name + "|" + gene_name + "|" + faststring(feature_num) + "|" + faststring(start);
+      //      name = ">" + original_file_name + "|" + gene_name + "|" + faststring(feature_num) + "|" + faststring(start);
 
       while (i1 != i2)
       {
@@ -387,7 +409,7 @@ class CBaitLocus
     {
       i3 = i2;
       --i3;
-      os << seq_name << "\t"
+      os << original_file_name << "\t"
 	 << gene_name << "\t"
 	 << feature_num << "\t"
 	 << num_features  << "\t"
@@ -414,7 +436,7 @@ class CBaitLocus
   }
 
   // TODO: Change this to FILE * instead of using ostream.
-  // Known formats are 'A' for the 3 paramter version of this function.
+  // Known formats are 'A' for the 3 parameter version of this function.
   void print(std::ostream &os, char format, const char *probeIDprefix)
   {
     std::vector<CBait *>::iterator i1, i2, i3;
@@ -515,21 +537,37 @@ class CBaitLocus
 
   friend bool num_baits_lessThanCBaitLocus(CBaitLocus *a, CBaitLocus *b)
   {
-    // For an equal number of baits, prefer a locus based on more sequences.
-    if (a->num_baits == b->num_baits)
+    // First criterion:
+    if (a->num_baits != b->num_baits)
+      return a->num_baits < b->num_baits;
+
+    // Second criterion: (opposite to first, therefore we use > and not <:
+    if (a->num_sequences_in_region != b->num_sequences_in_region)
       return a->num_sequences_in_region > b->num_sequences_in_region;
 
-    return a->num_baits < b->num_baits;
+    // Otherwise we sort by starting position. This makes the program output independent of
+    // different versions of the sort algorithm. They are guaranteed to differ in different alignments files.
+    return a->start < b->start;
   }
 
+  // Not used:
   friend bool num_sequences_in_region_lessThanCBaitLocus(CBaitLocus *a, CBaitLocus *b)
   {
-    // For loci based on an equal number of sequences, prefer the one with less needed baits.
-    // Note: This comparator sorts in reversed order.
-    if (a->num_sequences_in_region == b->num_sequences_in_region)
+    // For loci based on an equal number of sequences, we prefer the one with less needed baits.
+    // Note: This comparator sorts in the order greater is better, less is worse.
+    // Better loci come later in a sorted list.
+
+    // First criterion:
+    if (a->num_sequences_in_region != b->num_sequences_in_region)
+      return a->num_sequences_in_region < b->num_sequences_in_region;
+
+    // Second criterion: (opposite to first, therefore we use > and not <:
+    if (a->num_baits != b->num_baits)
       return a->num_baits > b->num_baits;
-      
-    return a->num_sequences_in_region < b->num_sequences_in_region;
+   
+    // Otherwise we sort by starting position. This makes the program output independent of
+    // different versions of the sort algorithm. They are guaranteed to differ in different alignments files.
+    return a->start < b->start;
   }
 
   // First criterion:  gene_name
@@ -537,29 +575,47 @@ class CBaitLocus
   // Third  criterion: locus start coordinate
   friend bool gene_name__feature_num_lessThanCBaitLocus(CBaitLocus *a, CBaitLocus *b)
   {
+    // First criterion
     if (a->gene_name != b->gene_name)
       return a->gene_name < b->gene_name;
 
+    // Second criterion
     if (a->feature_num != b->feature_num)
       return a->feature_num < b->feature_num;
     
+    // Third criterion
     return a->start < b->start;
   }
 
-  friend bool num_baits_greaterThanCBaitLocus(CBaitLocus *a, CBaitLocus *b)
-  {
-    if (a->num_baits == b->num_baits)
-      return  a->num_sequences_in_region < b->num_sequences_in_region;
+/*   // not used: */
+/*   friend bool num_baits_greaterThanCBaitLocus(CBaitLocus *a, CBaitLocus *b) */
+/*   { */
+/*    // First criterion: */
+/*     if (a->num_baits != b->num_baits) */
+/*       return a->num_baits > b->num_baits; */
 
-    return a->num_baits > b->num_baits;
-  }
+/*     // Second criterion: (for the sequence coverage, more is better , therefore we use > and not <: */
+/*     if (a->num_sequences_in_region != b->num_sequences_in_region) */
+/*       return a->num_sequences_in_region < b->num_sequences_in_region; */
+
+/*     // Otherwise we sort by starting position. This makes the program output independent of */
+/*     // different versions of the sort algorithm. They are guaranteed to differ in different alignments files. */
+/*     return a->start < b->start; */
+/*   } */
 
   friend bool num_sequences_in_region_greaterThanCBaitLocus(CBaitLocus *a, CBaitLocus *b)
   {
-    if (a->num_sequences_in_region == b->num_sequences_in_region)
+    // First criterion: more sequence (coverage)
+    if (a->num_sequences_in_region != b->num_sequences_in_region)
+      return a->num_sequences_in_region > b->num_sequences_in_region;
+
+    // Second criterion: less baits, opposite comparison
+    if (a->num_baits != b->num_baits)
       return a->num_baits < b->num_baits;
 
-    return a->num_sequences_in_region > b->num_sequences_in_region;
+   // Otherwise we sort by starting position. This makes the program output independent of
+    // different versions of the sort algorithm. They are guaranteed to differ in different alignments files.
+    return a->start < b->start;
   }
 
   friend bool gene_name__feature_num_greaterThanCBaitLocus(CBaitLocus *a, CBaitLocus *b)
@@ -576,32 +632,42 @@ class CBaitLocus
 
   friend bool locus_start_lessThanCBaitLocus(CBaitLocus *a, CBaitLocus *b)
   {
-    if (a->gene_name == b->gene_name)
-      return a->start < b->start;
-    return a->gene_name < b->gene_name;
-  }
+    // First criterion:
+    if (a->gene_name != b->gene_name)
+      return a->gene_name < b->gene_name;
 
-  friend bool seq_name__feature_num_start_lessThanCBaitLocus(CBaitLocus *a, CBaitLocus *b)
-  {
-    if (a->seq_name != b->seq_name)
-      return a->seq_name < b->seq_name;
-
-    if (a->feature_num != b->feature_num)
-      return a->feature_num < b->feature_num;
-    
+    // Second criterion:
     return a->start < b->start;
   }
+
+/*   friend bool original_file_name__feature_num_start_lessThanCBaitLocus(CBaitLocus *a, CBaitLocus *b) */
+/*   { */
+/*     // First criterion: */
+/*     if (a->original_file_name != b->original_file_name) */
+/*       return a->original_file_name < b->original_file_name; */
+
+/*     // Second criterion: */
+/*     if (a->feature_num != b->feature_num) */
+/*       return a->feature_num < b->feature_num; */
+    
+/*     // Third criterion: */
+/*     return a->start < b->start; */
+/*   } */
 
 }; // END CBaitLocus
 
 
 
+// Contains usually multiple loci of bait regions. 
+// Usually, loci come from multiple alignments, genes and features.
 
 class CBaitLoci_collection
 {
   std::vector<CBaitLocus*>                                       baitLoci_vec;
   std::map<Ctriple<faststring, unsigned, unsigned>, CBaitLocus*> baitLoci_map;
   bool                                                           delete_in_destructor;
+  bool                                                           has_feature_information_bool;
+
   //  unsigned                                                       bait_length; // Will be set to 0 in constructor and will be adjusted to its true value in the add method.
   //                                                                              // The fact that we have one value for a collection of baits implies, that we assume that all baits in all loci have the same length.
 
@@ -609,8 +675,10 @@ class CBaitLoci_collection
   void add_locus(CBaitLocus *p)
   {
     baitLoci_vec.push_back(p);
-    baitLoci_map.insert(std::pair<Ctriple<faststring, unsigned, unsigned>, CBaitLocus*>(Ctriple<faststring, unsigned, unsigned>(p->get_seq_name(), p->get_feature_num(), p->get_start()), p) );
+    baitLoci_map.insert(std::pair<Ctriple<faststring, unsigned, unsigned>, CBaitLocus*>(Ctriple<faststring, unsigned, unsigned>(p->get_original_file_name(), p->get_feature_num(), p->get_start()), p) );
 
+    if (p->has_feature_information())
+      has_feature_information_bool = true;
     //    unsigned new_bait_length = p->get_bait_length();
 
 /*     if (bait_length == 0) */
@@ -627,7 +695,7 @@ class CBaitLoci_collection
 
 
  public:
- CBaitLoci_collection(std::ifstream &is):delete_in_destructor(true) //, bait_length(0)
+ CBaitLoci_collection(std::ifstream &is):delete_in_destructor(true), has_feature_information_bool(false) //, bait_length(0)
   {
     faststring line;
 
@@ -649,7 +717,7 @@ class CBaitLoci_collection
   }
 
 
- CBaitLoci_collection(CBaitLoci_collection &source, char genes_or_features, char num_baits_or_sequences):delete_in_destructor(false) //, bait_length(0)
+ CBaitLoci_collection(CBaitLoci_collection &source, char genes_or_features, char num_baits_or_sequences):delete_in_destructor(false), has_feature_information_bool(false) //, bait_length(0)
   {
 /*     { */
 /*       std::cout << "++++++++++++++" << std::endl; */
@@ -666,7 +734,7 @@ class CBaitLoci_collection
       if (!source.is_partially_ordered() )
 	if (global_verbosity >= 1)
 	{
-	  std::cout << "WARNING: Sorting NOT successful." << std::endl;
+	  std::cerr << "WARNING: Sorting NOT successful." << std::endl;
 	}
 /*       else */
 /* 	std::cout << "Sorting was successful." << std::endl; */
@@ -730,11 +798,12 @@ class CBaitLoci_collection
 	it = source.find_end_this_feature(it);
       }
     }
+    // We restore the original sorting of the source CBaitLoci_collection
     sort_within_genes(gene_name__feature_num_lessThanCBaitLocus);
   } // END CBaitLoci_collection(CBaitLoci_collection &source, char genes_or_features, char num_baits_or_sequences)
 
 
- CBaitLoci_collection(const CBaitLoci_collection &source, const CBaitRegionSelectorSets &lss, char mode):delete_in_destructor(false) // , bait_length(0)
+ CBaitLoci_collection(const CBaitLoci_collection &source, const CBaitRegionSelectorSets &lss, char mode):delete_in_destructor(false), has_feature_information_bool(false) // , bait_length(0)
  {
    unsigned i, N;
    N=source.baitLoci_vec.size();
@@ -745,7 +814,7 @@ class CBaitLoci_collection
      {
        CBaitLocus *p = source.baitLoci_vec[i];
 
-       if (!lss.exists(p->get_seq_name()) )
+       if (!lss.exists(p->get_original_file_name()) )
        {
 	 add_locus(p);
 	 //	 baitLoci_vec.push_back(p);
@@ -758,30 +827,42 @@ class CBaitLoci_collection
      {
        CBaitLocus *p = source.baitLoci_vec[i];
 
-       if (!lss.exists(p->get_seq_name(), p->get_feature_num()) )
+       if (!lss.exists(p->get_original_file_name(), p->get_feature_num()) )
        {
 	 add_locus(p);
-	 //	 baitLoci_vec.push_back(p);
        }
      }
    }
-   if (mode == 'x')      // Remove Locus is if a double hit occurs in it
+   if (mode == 'x')      // Remove Locus if a double hit occurs in it
    {
      for (i=0; i<N; ++i)
      {
        CBaitLocus *p = source.baitLoci_vec[i];
 
-       if (!lss.exists(p->get_seq_name(), p->get_feature_num(), p->get_start()) )
+       if (!lss.exists(p->get_original_file_name(), p->get_feature_num(), p->get_start()) )
        {
 	 add_locus(p);
-	 //	 baitLoci_vec.push_back(p);
        }
      }
+   }
+   else if (mode == 'C') // In this mode we simply copy the loci to this collector.
+   {
+     for (i=0; i<N; ++i)
+     {
+       CBaitLocus *p = source.baitLoci_vec[i];
+       add_locus(p);
+     }
+   }
+   else
+   {
+     std::cerr << "Error: Unknown mode in constructor: CBaitLoci_collection(const CBaitLoci_collection &source, const CBaitRegionSelectorSets &lss, char mode): " << std::endl;
+     std::cerr << "Bad mode character: " << mode << std::endl;
+     exit(-1);
    }
  }
 
 
- CBaitLoci_collection(const CBaitLoci_collection &source, CBlast_parser &bp, double minimum_coverage):delete_in_destructor(false) //, bait_length(source.bait_length)
+ CBaitLoci_collection(const CBaitLoci_collection &source, CBlast_parser &bp, double minimum_coverage):delete_in_destructor(false), has_feature_information_bool(false) //, bait_length(source.bait_length)
   {
     unsigned    tile_index, number_of_tiles;
     faststring  recognition_string;
@@ -795,8 +876,8 @@ class CBaitLoci_collection
     it     = source.baitLoci_vec.begin();
     it_end = source.baitLoci_vec.end();
 
-    N = source.baitLoci_vec.size();
-    count = 0;
+    N      = source.baitLoci_vec.size();
+    count  = 0;
 
     // for each bait region
     while (it != it_end)
@@ -810,16 +891,17 @@ class CBaitLoci_collection
       if (bait_length_this_bait_region == 0)
       {
 	// We have a problem. Something seems to have gone wrong. This should not happen.
+	// We catch this potential error, since it leads to division by 0 and a crash would be expected.
 	std::cerr << "The bait length has been determined to be 0 for the bait region: " << std::endl;  
 	(**it).print(std::cerr, 's');
-	std::cerr << "This bug should be reported. It should not occur. It might be caused by mal formated input files,"
+	std::cerr << "This bug should be reported. It should not occur. It might be caused by malformatted input files,"
 	             " but the error should be caught earlier than here." << std::endl;
 	exit(-5);
       }
 
-      if (global_verbosity > 2)
+      if (global_verbosity >= 3)
       {
-	std::cout << "Region: " << count << " of " << N << std::endl;
+	std::cout << "Handling region: " << count << " outof " << N << std::endl;
       }
 
       // Within each bait region determine the maximum hit coverage of all baits
@@ -840,14 +922,15 @@ class CBaitLoci_collection
 
 	best_coverage_this_tiling_stack = (double) max_hit_length/bait_length_this_bait_region;
 
-	if (global_verbosity > 50)
+	if (global_verbosity >= 50)
 	{
-	  std::cout << "Tile: " << tile_index << " " << recognition_string << " " << max_hit_length << "/" << bait_length_this_bait_region << "=" << best_coverage_this_tiling_stack << std::endl;
+	  std::cout << "Tile: " << tile_index << " " << recognition_string << " " << max_hit_length << "/" << bait_length_this_bait_region << "=" 
+                    << best_coverage_this_tiling_stack << std::endl;
 	}
 
 	if (best_coverage_this_tiling_stack < 0)
 	{
-	  if (global_verbosity > 50)
+	  if (global_verbosity >= 50)
 	  {
 	    std::cout << "No hit for recognition string: " << recognition_string << " --> "
 		      << 0.00 << std::endl;
@@ -855,9 +938,9 @@ class CBaitLoci_collection
 	}
 	else
 	{
-	  if (global_verbosity > 50)
+	  if (global_verbosity >= 50)
 	  {
-	    std::cout << "Determined best coverage of this tiling stack: " << recognition_string << " --> "
+	    std::cout << "Determined best coverage of this tiling design column: " << recognition_string << " --> "
 		      << best_coverage_this_tiling_stack << std::endl;
 	  }
 	}
@@ -890,10 +973,14 @@ class CBaitLoci_collection
     }
   }
 
-
-  void get_map_of_baits_to_locus_info(faststring seq_name_match, unsigned tiling_index, std::map<faststring, CBaitLocus *> &bait_map)
+  bool has_feature_information() const
   {
-    //    sort_by_seq_name__feature_num_start();
+    return has_feature_information_bool;
+  }
+
+  void get_map_of_baits_to_locus_info(faststring original_file_name_match, unsigned tiling_index, std::map<faststring, CBaitLocus *> &bait_map)
+  {
+    //    sort_by_original_file_name__feature_num_start();
 
     std::vector<CBaitLocus*>::iterator it_Locus, it_Locus_end;
     it_Locus     = baitLoci_vec.begin();
@@ -907,7 +994,7 @@ class CBaitLoci_collection
 
     while (it_Locus != it_Locus_end)
     {
-      if ( (**it_Locus).get_seq_name().find(seq_name_match) != faststring::npos)
+      if ( (**it_Locus).get_original_file_name().find(original_file_name_match) != faststring::npos)
       {
 	(**it_Locus).get_vector_of_baits(tiling_index, tmp_bait_vec);
 
@@ -932,7 +1019,7 @@ class CBaitLoci_collection
 /*     it1 = it2 = baitLoci_vec.begin(); */
 /*     it_end    = baitLoci_vec.end(); */
 
-/*     // Advance it2 until we have the first NUll element: */
+/*     // Advance it2 until we have the first NULL element: */
 /*     while (*it2 != NULL && it2 != it_end) */
 /*     { */
 /*       ++it1; */
@@ -964,23 +1051,22 @@ class CBaitLoci_collection
 /*   } */
 
 
-  void sort_by_num_baits(std::vector<CBaitLocus*>::iterator it, std::vector<CBaitLocus*>::iterator it_end)
-  {
-    sort (it, it_end, num_baits_lessThanCBaitLocus);
-  }
+/*   void sort_by_num_baits(std::vector<CBaitLocus*>::iterator it, std::vector<CBaitLocus*>::iterator it_end) */
+/*   { */
+/*     MYSORT (it, it_end, num_baits_lessThanCBaitLocus); */
+/*   } */
 
-  void sort_by_num_sequences(std::vector<CBaitLocus*>::iterator it, std::vector<CBaitLocus*>::iterator it_end)
-  {
-    sort (it, it_end, num_sequences_in_region_greaterThanCBaitLocus);
-  }
+/*   void sort_by_num_sequences(std::vector<CBaitLocus*>::iterator it, std::vector<CBaitLocus*>::iterator it_end) */
+/*   { */
+/*     MYSORT (it, it_end, num_sequences_in_region_greaterThanCBaitLocus); */
+/*   } */
 
   void sort_by_gene_name__feature_num(std::vector<CBaitLocus*>::iterator it, std::vector<CBaitLocus*>::iterator it_end)
   {
-    sort (it, it_end, gene_name__feature_num_lessThanCBaitLocus);
+    MYSORT (it, it_end, gene_name__feature_num_lessThanCBaitLocus);
   }
 
-
-  unsigned get_number_of_loci()
+  unsigned get_number_of_loci() const
   {
     return baitLoci_vec.size();
   }
@@ -1008,7 +1094,7 @@ class CBaitLoci_collection
 
 
   //////////////////
-  // We nowimpelmented this in a constructor to be consistent with other filtering steps.
+  // We now impelmented this in a constructor to be consistent with other filtering steps.
   //////////////////
 /*   void filter_hit_coverage(double minimum_coverage, CBlast_parser &bp) */
 /*   { */
@@ -1076,14 +1162,19 @@ class CBaitLoci_collection
     it     = baitLoci_vec.begin();
     it_end = baitLoci_vec.end();
 
+    // TODO: In case we have no alignment cutting we should use an alternative heading in the output file.
+    //       This is not urgent, just more elegant. It requires some work to get the information to this point.
     if (format == 's')
     {
-      os <<  "# Corresponding sequence name\tGene-name\tfeature-number\tnumber-of-features-of-specified-type-for-this-gene-in-gff-file\tstart-coordinate-of-bait-region-in-alignment\tnumber-of-sequences-in-region-the-baits-are-based-on\tnumber-of-baits-constructed-for-this-bait-region\tList of baits - each bait is proceed by the tiling stack number and followed by CG content and the maximum distance to the sequences in the alignment." << std::endl;
+      //  if (alignment_cutting)
+      os << "# Original-file-name\tGene-name\tFeature-number\tNumber-of-features-of-specified-type-for-this-gene-in-gff-file\tStart-coordinate-of-bait-region-in-alignment\tNumber-of-sequences-in-region-the-baits-are-based-on\tNumber-of-baits-constructed-for-this-bait-region\tList of baits - for each bait the tiling design column is given, then the bait string, its CG content and its maximum distance to the sequences in the alignment." << std::endl;
+      //  else
+      //    os << "# Corresponding sequence name\tGene-name\tn.a.\tn.a.\tStart-coordinate-of-bait-region-in-alignment\t Number-of-sequences-in-region-the-baits-are-based-on\tNumber-of-baits-constructed-for-this-bait-region\tList of baits - for each bait the tiling design column is given, then the bait string, its CG content and its maximum distance to the sequences in the alignment." << std::endl;
     }
 
     if ( !(format == 's' || format == 'f' ) )
     {
-      std::cerr << "ERROR: Unkown internal format " << format << " found in call to CBaitLoci_collection::print_all(2 paramters)" << std::endl;
+      std::cerr << "ERROR: Unknown internal format " << format << " found in call to CBaitLoci_collection::print_all(2 parameters)" << std::endl;
       exit(-24);
     }
 
@@ -1107,7 +1198,7 @@ class CBaitLoci_collection
     }
     else
     {
-      std::cerr << "ERROR: Unkown internal format " << format << " found in call to CBaitLoci_collection::print_all(3 parameters)" << std::endl;
+      std::cerr << "ERROR: Unknown internal format " << format << " found in call to CBaitLoci_collection::print_all(3 parameters)" << std::endl;
       exit(-25);
     }
 
@@ -1137,9 +1228,14 @@ class CBaitLoci_collection
 
   void print_with_start_stepwidth(std::ostream &os, char format, unsigned start, unsigned step)
   {
+    // TODO: In case we have no alignment cutting we should use an alternative heading in the output file.
+    //       This is not urgent, just more elegant. It requires some work to get the information to this point.
     if (format == 's')
     {
-      os <<  "# Corresponding sequence name\tGene-name\tfeature-number\tnumber-of-features-of-specified-type-for-this-gene-in-gff-file\tstart-coordinate-of-bait-region-in-alignment\tnumber-of-sequences-in-region-the-baits-are-based-on\tnumber-of-baits-constructed-for-this-bait-region\tList of baits - each bait is proceed by the tiling stack number and followed by CG content and the maximum distance to the sequences in the alignment." << std::endl;
+      //  if (alignment_cutting)
+      os << "# Original-file-name\tGene-name\tFeature-number\tNumber-of-features-of-specified-type-for-this-gene-in-gff-file\tStart-coordinate-of-bait-region-in-alignment\tNumber-of-sequences-in-region-the-baits-are-based-on\tNumber-of-baits-constructed-for-this-bait-region\tList of baits - for each bait the tiling design column is given, then the bait string, its CG content and its maximum distance to the sequences in the alignment." << std::endl;
+      //  else
+      //    os << "# Corresponding sequence name\tGene-name\tn.a.\tn.a.\tStart-coordinate-of-bait-region-in-alignment\t Number-of-sequences-in-region-the-baits-are-based-on\tNumber-of-baits-constructed-for-this-bait-region\tList of baits - for each bait the tiling design column is given, then the bait string, its CG content and its maximum distance to the sequences in the alignment." << std::endl;
     }
 
     unsigned i,N = baitLoci_vec.size();
@@ -1151,6 +1247,95 @@ class CBaitLoci_collection
       i += step;
     }
   }
+
+  void print_with_start_stepwidth_multi_gene_feature_aware(std::ostream &os, char format, unsigned start_count, unsigned offset_count,
+							   std::vector<CBaitLocus*>::iterator it_start_this_alignment)
+  {
+    if (format == 's')
+    {
+      //  if (alignment_cutting)
+      os << "# Original-file-name\tGene-name\tFeature-number\tNumber-of-features-of-specified-type-for-this-gene-in-gff-file\tStart-coordinate-of-bait-region-in-alignment\tNumber-of-sequences-in-region-the-baits-are-based-on\tNumber-of-baits-constructed-for-this-bait-region\tList of baits - for each bait the tiling design column is given, then the bait string, its CG content and its maximum distance to the sequences in the alignment." << std::endl;
+      //  else
+      //    os << "# Corresponding sequence name\tGene-name\tn.a.\tn.a.\tStart-coordinate-of-bait-region-in-alignment\t Number-of-sequences-in-region-the-baits-are-based-on\tNumber-of-baits-constructed-for-this-bait-region\tList of baits - for each bait the tiling design column is given, then the bait string, its CG content and its maximum distance to the sequences in the alignment." << std::endl;
+    }
+
+    std::vector<CBaitLocus*>::iterator it_tmp, it;
+
+    it = it_start_this_alignment;
+
+    if ( (**it).has_feature_information() )
+      it_tmp = find_end_this_feature(it);
+    else
+      it_tmp = find_end_this_gene(it);
+
+    // First we determine the starting point for the iterator it "at start_count"
+    unsigned i=0, startdiff, laststart, start;
+
+    laststart = (**it).get_start();
+    while (i < start_count) // We won't walk past the end of this feature  or alignment
+    {
+      ++it;
+      if (it == it_tmp)
+	break;
+      // If we had to skip possible starting points, we try to correct for this.
+      start = (**it).get_start();
+      startdiff = start - laststart; // Difference of indices, should be at least 1.
+      i += startdiff; 
+      laststart = start;
+    }
+
+    if (it != it_tmp) // we should never have it == it_tmp, but if we have, we will crash, so we better check.
+    {
+      // Loop over all loci in steps of offset_count
+      while (true) // We won't walk past the end of this feature or alignment. We break inside the loop if it == it_tmp.
+      {
+	// This locus will be printed.
+	(*it)->print(os, format);
+
+	i = 0; // Count the number of loci we skip in next iteration.	
+	// Move to next locus we want to print:
+	// We move by one locus position. (The first move.)  
+	// We can handle the first move outside the loop below since offset_count must be > 0.
+	++it;
+	if (it == it_tmp)
+	  break;
+
+	// If we had to skip possible starting points, we try to correct for this.
+	start = (**it).get_start();
+	startdiff = start - laststart;
+	i += startdiff; // Diff is 1 or larger.
+	laststart = start;
+	  
+	// Skip offset_count loci.
+	while (it < it_tmp && i < offset_count)
+	{
+	  // Next iteration.
+	  ++it;
+	  if (it == it_tmp)
+	    break;
+	  start = (**it).get_start();
+	  startdiff = start - laststart;
+	  i += startdiff;
+	  laststart = start;
+	}
+	  
+	// If it == it_tmp, we have an iterator not pointing into this alignment/feature any more.
+	// So we have to break immediately.
+	if (it == it_tmp)
+	  break;
+	  
+	// In the ideal case i == offset_count. Then we are at the next locus we wanted to count.
+	// If i < offset_count we have not reached the next good locus in this alignment/gene/feature
+	//   before we moved past the end. In this case we have it == it_tmp and we leave the
+	//   loop with the next while check.
+	// If i > offset_count, then we had to skip more loci than we wanted to skip, since not all
+	// loci are valid starting points. In this case we add a penalty.
+       
+      } // END while true
+    } // END if (it != it_tmp)
+  } // END print_with_start_stepwidth_multi_gene_feature_aware
+
+
 
   std::vector<CBaitLocus*>::iterator find_end_this_feature(std::vector<CBaitLocus*>::iterator it)
   {
@@ -1194,7 +1379,7 @@ class CBaitLoci_collection
       // Find end of this gene:
       it_tmp = find_end_this_feature(it);
       //      std::cout << "Sort range: " << distance(baitLoci_vec.begin(), it) << " " << distance(baitLoci_vec.begin(), it_tmp) << std::endl;
-      sort(it,it_tmp, f);
+      MYSORT(it,it_tmp, f);
       it = it_tmp;
     }
   }
@@ -1209,15 +1394,15 @@ class CBaitLoci_collection
     {
       // Find end of this gene:
       it_tmp = find_end_this_gene(it);
-      sort(it,it_tmp, f);
+      MYSORT(it,it_tmp, f);
       it = it_tmp;
     }
   }
 
-  void sort_by_seq_name__feature_num_start()
-  {
-    sort(baitLoci_vec.begin(), baitLoci_vec.end(), seq_name__feature_num_start_lessThanCBaitLocus);
-  }
+/*   void sort_by_original_file_name__feature_num_start() */
+/*   { */
+/*     MYSORT(baitLoci_vec.begin(), baitLoci_vec.end(), original_file_name__feature_num_start_lessThanCBaitLocus); */
+/*   } */
 
 
   bool is_ordered_within_genes()
@@ -1307,6 +1492,9 @@ class CBaitLoci_collection
     NumBaits = local_NumBaits; 
   }
 
+  // Used to evaluate a starting index in thinning mode.
+  // Thinning can be done for multiple alignment files even though we originally had one file in mind.
+  // At the moment we do not start at position 1 when coming to the next alignment.
 
   void count_seqs_baits_for_start_and_offset(unsigned start_count, unsigned offset_count,
 					     unsigned &sum_seq,    unsigned &sum_baits)
@@ -1322,6 +1510,170 @@ class CBaitLoci_collection
       sum_seq   += baitLoci_vec[i]->get_num_sequences();
     }
   }
+
+  // Used to evaluate a starting index in thinning mode.
+  // Thinning can now be done for multiple alignment files even though we it was originally designed to work only for single files.
+  // This function is called for the loci of each alignment individually.
+  // This functions obtains the first locus it should consider and walks through all loci until the loci belong to the next alignment.
+  // It passes back the start locus for the next alignment.
+  //// At the moment we do not start at position 1 when coming to the next alignment.
+
+  void count_seqs_baits_for_start_and_offset_multi_gene_feature_aware(unsigned alignment_counter,
+								      std::vector<CBaitLocus*>::iterator &it_start_this_alignment,
+								      std::vector<CBaitLocus*>::iterator &it_start_next_alignment,
+								      bool     &finished,
+								      unsigned start_count, unsigned offset_count,
+								      unsigned &sum_seq,    unsigned &sum_baits,
+								      unsigned &penalty_diff)
+  {
+    unsigned i;
+    unsigned lastLocusStart, thisLocusStart, locusStartDiff;
+    int penalty_diff_local = 0;
+
+    sum_seq = sum_baits = 0;
+
+    if (global_verbosity >= 50)
+    {
+      std::cerr << "Working on alignment number: " << alignment_counter << " start " << start_count << std::endl;
+    }
+
+    std::vector<CBaitLocus*>::iterator it, it_end_al;
+
+    if (alignment_counter == 1)  // Since the calling function does not have access to the baitLoci_vec, the start is initialized in this function, if alignment_counter == 1.
+    {
+      it = it_start_this_alignment = baitLoci_vec.begin();
+    }
+    else
+    {
+      it = it_start_this_alignment;
+    }
+
+    if ( (**it).has_feature_information() )
+      it_end_al = find_end_this_feature(it);
+    else
+      it_end_al = find_end_this_gene(it);
+
+    
+    // First we determine the start for iterator at start_count
+    i=0;
+    lastLocusStart = (**it).get_start();  // This information is used to keep track of already deleted starting positions of loci.
+                                          // This variable is initialised with the locus staring coordinate of the first bait region starting position.
+
+    while (i < start_count) // We won't walk past the end of this feature  or alignment
+    {
+      ++it;
+      if (it == it_end_al)
+	break;
+      // If we had to skip possible starting points, we try to correct for this.
+      thisLocusStart = (**it).get_start();
+      locusStartDiff = thisLocusStart - lastLocusStart; // Difference of indices, should be at least 1. Is 0 for first bait region.
+      i += locusStartDiff; 
+      lastLocusStart = thisLocusStart;
+    }
+
+    //      std::cout << "Found start (index:start_count, index-found:i): " << start_count << " " << i << std::endl;
+
+    // Differences are not penalised if they occur while searching for the starting position.
+    // In the ideal case, i == start_count. i < start_count should not be possible.
+    // However, if we moved passed the ideal start_count, we penalise this.
+    if (i > start_count)
+    {
+      penalty_diff_local = i-start_count;
+    }
+
+    // If we moved past the end of the alignment, we found no valid starting point in this alignment.
+    // This will be penalised. This penalty might superseed a previous penalty.
+    if (it == it_end_al)
+    {
+      // The amount of the penalty could be a matter of debate. A small/moderate penalty is the
+      // start_count itself. It penalises larger start counts more.
+      penalty_diff_local = start_count;
+    }
+    else
+    {
+      // Loop over all loci in steps of offset_count
+      while (true) // We won't walk past the end of this feature or alignment. We break inside the loop if it == it_end_al.
+      {
+	// This locus is scored.
+	//	  std::cout << "Score locus (seq-coord:start,counter:i): " <<  (**it).get_start() << " " << i << std::endl;
+	sum_baits += (**it).get_num_baits();
+	sum_seq   += (**it).get_num_sequences();
+
+	i = 0; // Count the number of loci we skip in next iteration.
+	
+	// Move to next loci we want to add:
+	// We move by one locus position. (The first move.)  
+	// We can handle the first move outside the loop below since offset_count must be > 0.
+	++it;
+	if (it == it_end_al)
+	  break;
+
+	// If we had to skip possible starting points, we try to correct for this.
+	thisLocusStart = (**it).get_start();
+	locusStartDiff = thisLocusStart - lastLocusStart;
+	i += locusStartDiff; // Diff is 1 or larger.
+	lastLocusStart = thisLocusStart;
+	  
+	// Skip offset_count loci.
+	while (it < it_end_al && i < offset_count)
+	{
+	  // Next iteration.
+	  ++it;
+	  if (it == it_end_al)
+	    break;
+	  thisLocusStart = (**it).get_start();
+	  locusStartDiff = thisLocusStart - lastLocusStart;
+	  i += locusStartDiff;
+	  lastLocusStart = thisLocusStart;
+	}
+	  
+	// If it == it_end_al, we have an iterator not pointing this alignment/feature any more.
+	// So we have break immediately.
+	if (it == it_end_al)
+	  break;
+	  
+	// In the ideal case i == offset_count. Then we are at the next locus we wanted to count.
+	// If i < offset_count we have not reached the next good locus in this alignment/gene/feature
+	//   before we moved past the end. In this case we have it == it_end_al and we leave the
+	//   loop with the next while check.
+	// If i > offset_count, then we had to skip more loci than we wanted to skip, since not all
+	// loci are valid starting points. In this case we add a penalty.
+	  
+	if (i > offset_count)
+	{
+	  penalty_diff_local += (i-offset_count);
+	}
+      } // END while true
+    } // END ELSE if (it == it_end_al)
+
+    penalty_diff = penalty_diff_local;
+    if (it == baitLoci_vec.end() )
+      finished = true;
+    else
+      finished = false;
+
+    it_start_next_alignment = it_end_al;
+
+  } //END FUNCTION count_seqs_baits_for_start_and_offset_multi_gene_feature_aware
+
+
+  void get_original_file_name_gene_name(unsigned alignment_counter,
+			      std::vector<CBaitLocus*>::iterator &it_start_this_alignment,
+			      faststring &P_original_file_name,
+			      faststring &P_gene_name
+			      )
+  {
+    if (alignment_counter == 1)
+    {
+      it_start_this_alignment = baitLoci_vec.begin();
+    }
+
+    P_original_file_name  = (**it_start_this_alignment).get_original_file_name();
+    P_gene_name           = (**it_start_this_alignment).get_gene_name();
+  }
+
+
+
 
   double get_max_dist_mean() const
   {

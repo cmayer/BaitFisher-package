@@ -1,4 +1,4 @@
-/*  BaitFisher (version 1.2.7) a program for designing DNA target enrichment baits
+/*  BaitFisher (version 1.2.8) a program for designing DNA target enrichment baits
  *  Copyright 2013-2016 by Christoph Mayer
  *
  *  This source file is part of the BaitFisher-package.
@@ -76,7 +76,8 @@ class CScoreMatrix
       std::cerr << "The following default values will be assumed as alignment parameters:" << std::endl;
 
       std::stringstream stringst;
-      stringst << ";D standard DNA scoring matrix\n 1 45 80 5 6 80 4\n -0 -3\n* @ 0 1 2 \nACGTRYMWSKDHVBN\n0  1  2  3  0  1  0  0  1  2  0  0  0  1  0\n 1 \n-2  1 \n-2 -2  1 \n-2 -2 -2  1 \n 1 -2  1 -2  1 \n-2  1 -2  1 -2  1 \n 1  1 -2 -2 -2 -2  1 \n 1 -2 -2  1 -2 -2 -2  1 \n-2  1  1 -2 -2 -2 -2 -2  1 \n-2 -2  1  1 -2 -2 -2 -2 -2  1 \n 1 -2  1  1  1 -2 -2  1 -2  1  1 \n 1  1 -2  1 -2  1  1  1 -2 -2 -2  1 \n 1  1  1 -2  1 -2  1 -2  1 -2 -2 -2  1 \n-2  1  1  1 -2  1 -2 -2  1  1 -2 -2 -2  1 \n 0  0  0  0  0  0  0  0  0  0  0  0  0  0  0\n";
+      stringst << ";D standard DNA scoring matrix\n 1 45 80 5 6 80 4\n   -0 -3\n * @ 0 1 2 \n ACGTRYMWSKDHVBN\n 0 1 2 3 0 1 0 0 1 2 0 0 0 1 0\n  1\n -2  1\n -2 -2  1\n -2 -2 -2  1\n  1 -2  1 -2  1\n -2  1 -2  1 -2  1 \n 1  1 -2 -2 -2 -2  1\n  1 -2 -2  1 -2 -2 -2  1\n -2  1  1 -2 -2 -2 -2 -2  1\n -2 -2  1  1 -2 -2 -2 -2 -2  1\n  1 -2  1  1  1 -2 -2  1 -2  1  1\n  1  1 -2  1 -2  1  1  1 -2 -2 -2  1\n  1  1  1 -2  1 -2  1 -2  1 -2 -2 -2  1\n -2  1  1  1 -2  1 -2 -2  1  1 -2 -2 -2  1\n 0  0  0  0  0  0  0  0  0  0  0  0  0  0  0\n";
+//        stringst << ";D standard DNA scoring matrix\n 1 45 80 5 6 80 4\n  -12 -4\n * @ 0 1 2 \n ACGTRYMWSKDHVBN\n 0 1 2 3 0 1 0 0 1 2 0 0 0 1 0\n  4\n -3  4\n -3 -3  4\n -3 -3 -3  4\n  1 -1  1 -1  1\n -1  1 -1  1 -3  1\n  1  1 -2 -2  0  0  1\n  1 -2 -2  1  0  0  0  1\n -2  1  1 -2  0  0  0  0  1\n -2 -2  1  1  0  0  0  0  0  1\n  1 -2  1  1  1  0  0  1  0  1  1\n  1  1 -2  1  0  1  1  1  0  0  0  1\n  1  1  1 -2  1  0  1  0  1  0  0  0  1\n -2  1  1  1  0  1  0  0  1  1  0  0  0  1\n 1  1  1  1  0  0  0  0  0  0  0  0  0  0  1\n";
       read_from_file(stringst);
 
       std::ios_base::fmtflags f = std::cerr.flags();
@@ -228,7 +229,7 @@ class CScoreMatrix
 
     if (!is)
     {
-      std::cerr << "Error while reading the matrix in the alignment parameter file. The file seems to be damaged. Please revert to a working version of this file." << std::endl;
+      std::cerr << "Error while reading the score matrix containing the alignment parameters. The file/content seems to be damaged. Please revert to a working version of this file/content." << std::endl;
       exit(10);
     }
   }

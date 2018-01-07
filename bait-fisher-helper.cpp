@@ -1,4 +1,4 @@
-/*  BaitFisher (version 1.2.7) a program for designing DNA target enrichment baits
+/*  BaitFisher (version 1.2.8) a program for designing DNA target enrichment baits
  *  Copyright 2013-2016 by Christoph Mayer
  *
  *  This source file is part of the BaitFisher-package.
@@ -166,7 +166,7 @@ void read_alignment_sequence_of_species2(faststring       alignment_file,
     
       if (seq_name == NULL)
       {
-	cerr << "INTERNAL ERROR: Could not retriev sequence name for sequence of index: " 
+	cerr << "INTERNAL ERROR: Could not retrieve sequence name for sequence of index: " 
 	     << i << " in read_transcript_sequence_of_species2." << endl;
 	exit(-5);
       }
@@ -174,7 +174,7 @@ void read_alignment_sequence_of_species2(faststring       alignment_file,
       faststring species_name = extract_taxon_name(seq_name, delim, field_num);
 
       //     cout << "Index: " << i << " " << N << endl;
-      //     cout << "Comapring: " << species_name << " " << species_name_query << endl;
+      //     cout << "Comparing: " << species_name << " " << species_name_query << endl;
 
       if (species_name == species_name_query)
 	break;

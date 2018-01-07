@@ -1,4 +1,4 @@
-/*  BaitFisher (version 1.2.7) a program for designing DNA target enrichment baits
+/*  BaitFisher (version 1.2.8) a program for designing DNA target enrichment baits
  *  Copyright 2013-2016 by Christoph Mayer
  *
  *  This source file is part of the BaitFisher-package.
@@ -26,8 +26,6 @@
  */
 // TODO: Check all new whether they have a corresponding delete
 
-
-
 //////////////////////////////////////////////////////////////////////
 // CSequences.h: interface for the CSequences class.
 //
@@ -46,6 +44,7 @@
 #include <cmath>
 #include <utility>
 #include "basic-DNA-RNA-AA-routines.h"
+#include <climits>
 
 #include <algorithm>
 
@@ -63,8 +62,6 @@
 //   If sequences are not of equal length, it is recommended to revise the code in this head file first.
 //
 ////////////////////////////////////////////////////////////////////
-
-
 
 // Global Functions
 //////////////////////////////////
@@ -185,6 +182,134 @@ inline void add_or_count(std::map<faststring, unsigned> &m, faststring &x)
   }
 }
 
+inline unsigned add_or_count_return(std::map<faststring, unsigned> &m, faststring &x)
+{
+  std::map<faststring,unsigned>::iterator it;
+
+  it = m.find(x);
+  if (it == m.end() )
+  {
+    return m[x] = 1;
+  }
+  else
+  {
+    return (++it->second);
+  }
+}
+
+
+inline void vector_of_faststring_shorten_all(std::vector<faststring> &v, unsigned len)
+{
+  unsigned N = v.size();
+  for (unsigned i=0; i< N; ++i)
+  {
+    v[i].shorten(len);
+  }
+}
+
+inline void vector_of_faststring_replace_characters(std::vector<faststring> &v, faststring &string_of_replacement_symbols, char skip_char)
+{
+  unsigned char all_symbols_lookup[256];
+  faststring::size_t  i;
+  unsigned            j;
+
+  for (j=0; j<256; ++j)
+  {
+    all_symbols_lookup[j] = (unsigned char)j;
+  }
+
+  faststring::size_t n = string_of_replacement_symbols.size();
+  for (i=0; i<n; i+=2)
+  {
+    all_symbols_lookup[(unsigned char)string_of_replacement_symbols[i]] = string_of_replacement_symbols[i+1];
+  }
+
+  for (i=0; i < v.size(); ++i)
+  {
+    char       *pos     = v[i].begin();
+    char       *pos_end = v[i].end();
+    char       *pos_write;
+    char       c;
+    unsigned   removed  = 0;
+    faststring::size_t   N = v[i].length();
+
+    pos_write = pos;
+
+    while (pos < pos_end)
+    {
+      c = all_symbols_lookup[(unsigned char)*pos];
+      if (c != skip_char)
+      {
+	*pos_write = c;
+	++pos_write;
+      }
+      else
+      {
+	++removed;
+      }
+      ++pos;
+    }
+    v[i].shorten(N-removed);
+  }
+}
+
+
+inline void vector_of_faststring_unique(std::vector<faststring> &v, faststring::size_t len)
+{
+  faststring::size_t digits = (unsigned)log10(v.size()) + 1;
+  faststring::size_t mlen;
+
+  if (digits+1 >= len)
+    mlen = 0;
+  else
+    mlen = len-digits-1;
+
+  std::map<faststring, unsigned>  m_names, m_names_short;
+  std::map<faststring, unsigned>::iterator  f_it, f_it2;
+ 
+  faststring   tmp;
+
+  for (unsigned i=0; i < v.size(); ++i)
+  {
+    add_or_count(m_names, v[i]);
+  }
+
+  for (unsigned i=0; i < v.size(); ++i)
+  {
+    if (m_names[v[i]] > 1)
+    {
+      v[i].shorten(mlen);
+    }
+    add_or_count(m_names_short, v[i]);
+  }
+  m_names.clear();
+
+  char s = '_';
+  if (mlen == 0)
+    s = 'S';
+
+  unsigned n;
+  for (unsigned i=0; i < v.size(); ++i)
+  {
+    if (m_names_short[v[i]] > 1)
+    {
+      n = add_or_count_return(m_names, v[i]);
+      v[i] += s + faststring(n, '0', digits);
+    }
+  }
+}
+
+
+inline void vector_of_faststring_trimSpaces_front_back(std::vector<faststring> &v)
+{
+  unsigned N = v.size();
+  for (unsigned i=0; i< N; ++i)
+  {
+    v[i].removeSpacesFront();
+    v[i].removeSpacesBack();
+  }
+}
+
 
 //////////////////////////////////
 // Data types
@@ -298,7 +423,7 @@ public:
   //    pos2 must be the index after the last column.
   //    pos2-pos1 must be the number of bases that are copied to this sequence.
 
- CSequences2(const CSequences2 &s, unsigned pos1 = 0, unsigned pos2 = -1u):
+ CSequences2(const CSequences2 &s, faststring::size_t pos1 = 0, faststring::size_t pos2 = faststring::npos):
   datatype(s.datatype), taxaNum(s.taxaNum), ambig_char(s.ambig_char),
     originalPosNumbers_supplied(false), posNum(0)
   {
@@ -441,10 +566,10 @@ public:
      if (originalPosNumbers_supplied)
        return originalPosNumbers[index];
      else
-       return -1u;
+       return UINT_MAX;
    }
 
-   // Moves taxon with index index to top, preseving the order of all other taxa. 
+   // Moves taxon with index index to top, preserving the order of all other taxa. 
    // Of course this changes all indices with the only exception that this taxon is
    // already at the top of the vector.
    // The index is of course 0 based.
@@ -532,8 +657,8 @@ public:
 /*    } */
 
 
-
-   void unique_phylip_names(std::vector<faststring> &snames)
+/*
+   void unique_maxlen_names(std::vector<faststring> &snames, int ulen=10)
    {
      snames.clear();
      std::map<faststring, unsigned>  m_snames;
@@ -542,25 +667,73 @@ public:
      
      unsigned                             digits = (unsigned)log10(taxaNum) + 1;
      unsigned                             i;
-     
+     faststring                           tmp;
+     faststring                           tmp_short;
+
+     if (ulen - 1 < digits)
+     {
+       std::cerr << "Internal library error: Attempt to shorten sequence names to negative length. Usage of the function: unique_maxlen_names should be revised." << std::endl;
+       exit(-1);
+     }
+
+     for (i=0; i < taxaNum; ++i)
+     {
+       tmp = seqData[i]->getPhylipName(ulen);
+       f_it = m_snames.find(tmp);
+       // If we find it it is not unique
+       if (f_it != m_snames.end() ) // This name is not unique
+       {
+	 ++f_it->second; // We count this occurrence
+       }
+     }
+
+     for (i=0; i < taxaNum; ++i)
+     {
+       tmp = seqData[i]->getPhylipName(ulen);
+       //       snames.push_back(seqData[i]->getPhylipName());
+       f_it = m_snames.find(tmp);
+       if (f_it->second > 0 ) // This name is not unique
+       {
+	 tmp_short = tmp;
+	 tmp_short.resize(ulen-digits-1, ' ');
+	 // We know that we will have multiple entries in the end.
+	 f_it2 = m_shortend_names.find(tmp_short);
+	 // It could be that this will the first entry
+	 if (f_it2 != m_shortend_names.end() )
+	 {}
+       }
+       else // Otherwise we will have only one entry.
+       {
+	 snames.push_back(tmp);
+       }
+
+       
+
+       
+     }
+   
+     /// 
+
+
+
      for (i=0; i < taxaNum; ++i)
      {
        // push_back first sequence phylip sequence name. This is already trimmed to 10 characters.
-       snames.push_back(seqData[i]->getPhylipName());
+       snames.push_back(seqData[i]->getPhylipName(ulen));
        // Search for this name in m_snames map.
        f_it = m_snames.find(snames[i]);
 
        // If we find it it is not unique
        if (f_it != m_snames.end() ) // This name is not unique
        {
-	 ++f_it->second; // We count this occurence
+	 ++f_it->second; // We count this occurrence
        }
        else // If we do not find it, we insert it and set the counter to 1
        {
 	 m_snames.insert(std::make_pair(snames[i], 1));
        }
      }
-     // We have build the map that count the number of occurences - now we need to create unique names:
+     // We have build the map that count the number of occurrences - now we need to create unique names:
 
      // We will shorten the names to add a number.
      // When shortening names, previously unique names might become non-unique so we have to take care of this first:
@@ -590,9 +763,9 @@ public:
 
      // Now we have two maps:
      // The first has entries for all names
-     // The second has entries for all names that need to be shortend.
+     // The second has entries for all names that need to be shortened.
 
-     // For all names that need to be shortend:
+     // For all names that need to be shortened:
      f_it = m_shortend_names.begin();
      while (f_it != m_shortend_names.end() )
      {
@@ -604,7 +777,7 @@ public:
 	 temp = snames[j];
 	 if ( m_snames[temp] != 1 )
 	 {
-	   temp.shorten(9-digits);
+	   temp.shorten(10-digits);
 	 }
 	 if (temp == f_it->first)
 	 {  
@@ -621,7 +794,7 @@ public:
        ++f_it;
      }
    }
-
+*/
 
    unsigned PairwiseSequenceSymbolMatches(unsigned taxon1, unsigned taxon2,
 					  char     numDistCharacters,
@@ -778,15 +951,42 @@ public:
        // PrintMessage_cerr(seq.getName());PrintMessage_cerr("-\n");PrintMessage_cerr(seq.getFullName());PrintMessage_cerr("-\n");PrintMessage_cerr(seq.getDescription());PrintMessage_cerr("-\n");
        if ( infile.fail() && !infile.eof() )
        {
-	 PrintMessage_cerr("\n\n");
-	 faststring errormsg;
-	 errormsg   =  "An error occurred while reading the input file. It might not be a valid fasta file.\n";
-	 errormsg  +=  "File position: line ";
-	 errormsg  +=  faststring(infile.line());
-	 ErrorMessage(errormsg.c_str());
-	 PrintMessage_cerr("\n");
-	 flush_cerr();
-	 return -25;
+	 if (infile.fail_reason1() )
+	 {
+	   PrintMessage_cerr("\n\n");
+	   faststring errormsg;
+	   errormsg   =  "An error occurred while reading the input file. The data type of the sequence is DNA, but the sequence that is read contains non-DNA symbols.\n";
+	   errormsg  +=  "File position: line ";
+	   errormsg  +=  faststring(infile.line());
+	   ErrorMessage(errormsg.c_str());
+	   PrintMessage_cerr("\n");
+	   flush_cerr();
+	   return -24;
+	 } else 
+	 if (infile.fail_reason2() )
+	 {
+	   PrintMessage_cerr("\n\n");
+	   faststring errormsg;
+	   errormsg   =  "An error occurred while reading the input file. The data type of the sequence is protein, but the sequence that is read from the file contains non valid amino acid symbols.\n";
+	   errormsg  +=  "File position: line ";
+	   errormsg  +=  faststring(infile.line());
+	   ErrorMessage(errormsg.c_str());
+	   PrintMessage_cerr("\n");
+	   flush_cerr();
+	   return -24;
+	 }
+	 else
+	 {
+	   PrintMessage_cerr("\n\n");
+	   faststring errormsg;
+	   errormsg   =  "An error occurred while reading the input file. It might not be a valid fasta file.\n";
+	   errormsg  +=  "File position: line ";
+	   errormsg  +=  faststring(infile.line());
+	   ErrorMessage(errormsg.c_str());
+	   PrintMessage_cerr("\n");
+	   flush_cerr();
+	   return -25;
+	 }
        }
 
        if ( count_seq < first_seq || count_seq > last_seq )
@@ -835,19 +1035,22 @@ public:
    }  // End this element function.
 
 
-
+   // Can read the following format variants:
    // Can read sequential and interleaved phylip files
+   // Can read strict and relaxed, i.e. 4 combinations.
+
    // Cannot read multi phylip files.
 
    // format_flag: 0 strict phylip standard. Sequence names are exactly 10 characters long.
-   //              1 relaxed sequence name length. Sequence names end with first space and can have anly length.
+   //              1 relaxed sequence name length. Sequence names end with first space and can have any length.
    //                Spaces are not allowed in sequence names.
+
 
    int read_from_Phylip_File(CFile& infile, unsigned format_flag = 1)
    {
      CSequence_Mol   *seq;
      //     unsigned        count_seq;
-     //     unsigned        global_sequence_from=0, global_sequence_to=-1u;
+     //     unsigned        global_sequence_from=0, global_sequence_to=UINT_MAX;
      //     bool            global_gaps_to_Ns=false;
      unsigned        all_lines_N;
      unsigned        curr_taxon;
@@ -919,7 +1122,7 @@ public:
 
      // Another problem is relaxed versus strict format.
      // In the related format the sequence name and the sequence are separated by white spaces.
-     // In the strict format the sequence name is less or sequal to 10 character.
+     // In the strict format the sequence name is less or equal to 10 character.
      // Example: Name123456A MILLV
      // Can be interpreted as sequence AMILLV or as sequence MILLV with the two different names.
      // In the strit format the following would be legal:
@@ -1023,14 +1226,14 @@ public:
 	 }
 	 else
 	 {
-	   for (;*pos != '\0' && *pos != ' '; ++pos)
+	   for (; (*pos != '\0') && (*pos != ' ' && *pos != '\t') ; ++pos)
 	   {
 	     seq_taxon_name.push_back(*pos);
 	   }
 	 }
 
 	 // Skip all spaces:
-	 while (*pos == ' ' && *pos != '\0')
+	 while ( *pos != '\0' && (*pos == ' ' || *pos == '\t') )
 	   ++pos;
 
 	 // Read data after sequence name:
@@ -1042,7 +1245,7 @@ public:
 	     // pos should point to the first char of the sequence.
 	     char c;
 
-	     // Skip all non-allowed symbols - since we skiped spaces, there should be none.
+	     // Skip all non-allowed symbols - since we skipped spaces, there should be none.
 	     c = *pos;
 	     while (!is_phylip_aa_dna_symbol(c) && !is_allowed_non_ABC(c) )
 	     {
@@ -1053,7 +1256,7 @@ public:
 	   // Now pos points to the first char that should be copied:
 	   while (*pos)
 	   {
-	     if (*pos != ' ')
+	     if (*pos != ' ' && *pos != '\t')
 	     {
 	       seq_in_one_line.push_back(*pos);
 	     }
@@ -1094,7 +1297,7 @@ public:
 	   // we have filled our sequence.
 	   while (*pos)
 	   {
-	     if (*pos != ' ')
+	     if (*pos != ' ' && *pos != '\t')
 	     {
 	       seq_in_one_line.push_back(*pos);
 	     }
@@ -1119,7 +1322,7 @@ public:
                       "(i) The number of taxa found in the first block does not match the number specified in the file header.\n"
 	              "(ii) Since only one data block was found, this file is interpreted as sequential format. If this should be a file\n"
                       "in interleaved format, blank line must be added between blocks of data.\n"
-                      "(iii) It could also be that the number of residues in the sequences is larger than specified in the header, so that addtional\n"
+                      "(iii) It could also be that the number of residues in the sequences is larger than specified in the header, so that additional\n"
 	              "lines of data are interpreted as additional taxa in the sequential format." << std::endl;
 	 exit(-67);
        }
@@ -1131,12 +1334,12 @@ public:
        // In the first block, the first 10 characters are
        // the sequence name. Then the first base starts
        // the sequence.
-       // After the first block, the sequence beginns/continues at
+       // After the first block, the sequence begins/continues at
        // the first base symbol in each line. Thus, numbers and spaces are ignored.
        // Sequence names are not allowed in interleaved blocks.
 
        // With format_flag == 1 we may have a different number of sequence name characters.
-       // But then, no spaces are allowed in the sequnce name. 
+       // But then, no spaces are allowed in the sequence name. 
 
        unsigned     curr_line_num=0;
        faststring   *currLine;
@@ -1175,18 +1378,18 @@ public:
 	 }
 	 else
 	 {
-	   for (;*pos != '\0' && *pos != ' '; ++pos)
+	   for (;*pos != '\0' && *pos != ' ' && *pos != '\t'; ++pos)
 	   {
 	     pseq_taxon_name->push_back(*pos);
 	   }
 	 }
 
 	 // Skip all spaces:
-	 while (*pos == ' ' && *pos != '\0')
+	 while (*pos == ' ' && *pos != '\0' && *pos != '\t')
 	   ++pos;
 
 	 // Read data after sequence name:
-	 if (*pos) // we neeed to read the rest of the line
+	 if (*pos) // we need to read the rest of the line
 	 {
 	   // Copy the sequence data:
 	   {
@@ -1202,7 +1405,7 @@ public:
 	   // Now pos points to the first char that should be copied:
 	   while (*pos)
 	   {
-	     if (*pos != ' ')
+	     if (*pos != ' ' && *pos != '\t')
 	       pseq_in_one_line->push_back(*pos);
 	     ++pos;
 	   }
@@ -1277,7 +1480,7 @@ public:
 	   // Copy the sequence on this line to our data.
 	   while (*pos)
 	   {
-	     if (*pos != ' ')
+	     if (*pos != ' ' && *pos != '\t')
 	       sequences[curr_taxon]->push_back(*pos);
 	     ++pos;
 	   }
@@ -1290,7 +1493,7 @@ public:
 	   std::cerr << "Parse error while reading the input file:\nThe phylip file was interpreted to be in the phylip format."
                         "Either the number of lines of data in one of the data blocks is not identical to the number of taxa\n"
 	                "or a blank line might be missing between different data blocks in the interleaved format." << std::endl;
-	   std::cerr << "This problem was detected in line " << curr_line_num+1 << " of the file, but it could have occured earlier." << std::endl;
+	   std::cerr << "This problem was detected in line " << curr_line_num+1 << " of the file, but it could have occurred earlier." << std::endl;
 	   exit(-77);
 	 }
 
@@ -1443,37 +1646,79 @@ public:
      return 0;
    }  // End read_from_Phylip_File
 
+   // Backwards compatible and convenience function ExportSequences with fewer parameters.
+   void ExportSequences(std::ostream &os, char format, unsigned interleaved_len)
+   {
+     faststring tmp;
+     ExportSequences(os, format, interleaved_len, tmp, UINT_MAX, true);
+   }
 
    // Normal export to different formats:
-   void ExportSequences(std::ostream &os, char format, unsigned interleaved_len)
+   void ExportSequences(std::ostream &os, char format, unsigned interleaved_len, faststring &replace_symbols_in_sequence_names, unsigned trim_seq_names_length, bool unique_names)
    {
      if (taxaNum == 0)
        return;
 
      // vector of sequences with gaps and stars.
-     // Why do we need a vector here?? 9.9.2912
+     // Why do we need a vector here?? 9.9.2012
      std::vector<faststring> vofs;
 
      unsigned i;
 
+     std::vector<faststring> sequence_names;
+
      for (i=0; i< taxaNum; ++i)
      {
-       vofs.push_back(faststring('\0', (size_t)10000));
+       vofs.push_back(faststring('\0', (size_t)100));
        seqData[i]->getSequence_fill_in_gaps_and_stars(vofs[i]);
+       sequence_names.push_back(seqData[i]->getFullName());
+     }
+
+     // if format is strict phylip, set trim_seq_names_length to 10.
+     if (format == 'p')
+     {
+       unique_names = true;
+       trim_seq_names_length = 10;
+     }
+
+     if (format == 'r')
+     {
+       bool space_in_query = false;;
+       faststring::size_t j;
+
+       for (j=0; j<replace_symbols_in_sequence_names.size(); j+=2)
+       {
+	 if (replace_symbols_in_sequence_names[j] == ' ')
+	   space_in_query = true;
+	 if (replace_symbols_in_sequence_names[j+1] == ' ') // This target is not allowed.
+	   replace_symbols_in_sequence_names[j+1] = '_';
+       }
+       if (!space_in_query)   // We append a replacement for ' '.
+	 replace_symbols_in_sequence_names += " _";
+     }
+
+     if ( !replace_symbols_in_sequence_names.empty() )
+     {
+       vector_of_faststring_replace_characters(sequence_names, replace_symbols_in_sequence_names, '>');
+     }
+
+     if (trim_seq_names_length < UINT_MAX)
+     {
+       vector_of_faststring_shorten_all(sequence_names, trim_seq_names_length);
+     }
+
+     vector_of_faststring_trimSpaces_front_back(sequence_names);
+
+     if (unique_names)
+     {
+       vector_of_faststring_unique(sequence_names, trim_seq_names_length);
      }
 
      if (format=='r') // relaxed phylip
      {
-       std::vector<faststring> phynames;
-       get_sequence_names(phynames);
-
        unsigned pos=0;
        unsigned i;
-
-       for (i=0; i < taxaNum; ++i)
-       {
-	 phynames[i].replace_char(' ', '_');
-       }
+       
        os << "\t" << taxaNum << "\t" << posNum << std::endl;
 
        // write first block with sequence names:
@@ -1481,7 +1726,7 @@ public:
        {
 	 for (i=0; i<taxaNum; ++i)
 	 {
-           os << phynames[i] << " ";
+           os << sequence_names[i] << " ";
            os << vofs[i].substr(pos, interleaved_len) << std::endl;
 	 }
 	 os << std::endl; // Separate blocks
@@ -1498,17 +1743,15 @@ public:
 	 pos += interleaved_len;
        }
      }
-     else if (format=='p') // Phylip
+     else 
+     if (format=='p') // Phylip
      {
-       std::vector<faststring> uphynames;
-       unique_phylip_names(uphynames);
-
        unsigned pos=0;
        unsigned i;
 
        for (i=0; i<taxaNum; ++i)
        {
-	 uphynames[i].fill_if_shorter(10, ' ');
+	 sequence_names[i].fill_if_shorter(10, ' ');
        }
 
        os << "\t" << taxaNum << "\t" << posNum << std::endl;
@@ -1518,7 +1761,7 @@ public:
        {
 	 for (i=0; i<taxaNum; ++i)
 	 {
-           os << uphynames[i] << " ";
+           os << sequence_names[i] << " ";
            os << vofs[i].substr(pos, interleaved_len) << std::endl;
 	 }
 	 os << std::endl; // Separate blocks
@@ -1542,7 +1785,7 @@ public:
 
        for (i=0; i<taxaNum; ++i)
        {
-         os << ">" << seqData[i]->getFullName() << std::endl;
+         os << ">" << sequence_names[i] << std::endl;
 	 pos = 0;
 	 while (pos < posNum)
 	 {
@@ -1578,7 +1821,7 @@ public:
        {
 	 for (i=0; i<taxaNum; ++i)
 	 {
-           os << "'" << seqData[i]->getName() << "'" << " ";
+           os << "'" << sequence_names[i] << "'" << " ";
            os << vofs[i].substr(pos, interleaved_len) << std::endl;
 	 }
 	 pos += interleaved_len;
@@ -1586,10 +1829,45 @@ public:
        os << ";" << std::endl << "end;" << std::endl;
 
      }
+     else if (format == 'N') // Nexus format with taxa and characters block:
+     {
+       unsigned pos;
+       unsigned i;
+
+       os << "Begin taxa;" << std::endl;       
+       os << "Dimensions ntax="<< taxaNum << ";" << std::endl;
+       os << "TAXLABELS ";
+
+       for (i=0; i<taxaNum-1; ++i)
+       {
+	 os << "'" << sequence_names[i] << "'" << " ";
+       }
+       os << "'" << sequence_names[i] << "'" << ";" << std::endl << "end;" << std::endl;
+       os << std::endl;
+
+       os << "Begin characters;" << std::endl;
+       os << "Dimensions ntax="<< taxaNum << " nchar="<< posNum << ";" << std::endl;
+       os << "Format datatype="<< seqData[0]->type_as_string()
+	 //  << " symbols=\" "<< <<  "\"" 
+	 << " missing=" << ambig_char << " gap=-;" << std::endl;
+       os << "matrix" << std::endl;
+       
+       pos=0;
+       while (pos < posNum)
+       {
+	 for (i=0; i<taxaNum; ++i)
+	 {
+           os << "'" << sequence_names[i] << "'" << " ";
+           os << vofs[i].substr(pos, interleaved_len) << std::endl;
+	 }
+	 pos += interleaved_len;
+       }
+       os << ";" << std::endl << "end;" << std::endl;
+     } // END format == 'N'
      else
      {
        std::cerr << "Internal error in ExportSequences(std::ostream, char, unsigned):\n"
-	            "Unkown value for format parameter. No output has been generated."
+	            "Unknown value for format parameter. No output has been generated."
 		 << std::endl;
      }
    }
@@ -1599,7 +1877,7 @@ public:
 /*    void ExportSequences(std::ostream &os, char format, unsigned interleaved_len, */
 /* 			std::vector<unsigned> site_filter) */
 /*    { */
-/*      // TODO: Currently onyl supports fasta without interleaved_len */
+/*      // TODO: Currently only supports fasta without interleaved_len */
 
 /*      if (taxaNum == 0) */
 /*        return; */
@@ -1619,7 +1897,7 @@ public:
 /*      if (format=='p') // Phylip */
 /*      { */
 /* /\*        std::vector<faststring> uphynames; *\/ */
-/* /\*        unique_phylip_names(uphynames); *\/ */
+/* /\*        unique_maxlen_names(uphynames); *\/ */
 
 /* /\*        unsigned pos=0; *\/ */
 /* /\*        unsigned i; *\/ */
@@ -1699,29 +1977,31 @@ public:
      if (taxaNum == 0)
        return;
 
-     if (end_exp > posNum || end_exp <= begin_exp)
-       return;
-
      unsigned i;
+     unsigned len;
      
      os << "\t" << taxaNum << "\t" << end_exp-begin_exp << std::endl;
      
      for (i=0; i<taxaNum; ++i)
      {
+       len = end_exp-begin_exp;
+       if (len > seqData[i]->length() )
+	 len = seqData[i]->length(); 
        os.write(seqData[i]->getName(), seqData[i]->getName_faststring().length());
        os.put(' ');
-       os.write(seqData[i]->getSeqBegin()+begin_exp, end_exp-begin_exp);
+       os.write(seqData[i]->getSeqBegin()+begin_exp, len);
        os.put('\n');
      }
    }
 
-
+   // Needs to be revised:
+   /*
    void ExportSequences_no_fill_in_ext_phylip_range(std::ostream &os, unsigned *coords, unsigned num_coord_pairs)
    {
      if (taxaNum == 0)
        return;
 
-     //     if (end_exp > posNum || end_exp <= begin_exp)
+     // if (end_exp > posNum || end_exp <= begin_exp)
      //       return;
 
      unsigned i,j, N=0;
@@ -1757,18 +2037,19 @@ public:
        os.put('\n');
      }
    }
-
+   */
 
 
    // Not yet well tested!!!!!
+   /*
    void Export_Single_Sequence(std::ostream &os, const faststring& fullname,
 			       char format, unsigned interleaved_len)
    {
      if (taxaNum == 0)
        return;
 
-     // vector of sequences with gaps and stars.
-     // Why do we need a vector here?? 9.9.2912
+     vector of sequences with gaps and stars.
+     Why do we need a vector here?? 9.9.2912
      std::vector<faststring> vofs;
 
      unsigned i;
@@ -1780,10 +2061,10 @@ public:
 	 seqData[i]->getSequence_fill_in_gaps_and_stars(vofs[i]);
      }
 
-     if (format=='p') // Phylip
+     if (format=='p') Phylip
      {
        std::vector<faststring> uphynames;
-       unique_phylip_names(uphynames);
+       unique_maxlen_names(uphynames);
 
        unsigned pos=0;
        unsigned i;
@@ -1828,21 +2109,21 @@ public:
      }
      else if (format=='n')
      {
-/*        Begin data; */
-/*        Dimensions ntax=4 nchar=15; */
-/*        Format datatype=dna symbols="ACTG" missing=? gap=-; */
-/*        Matrix */
-/* 	 Species1   atgctagctagctcg */
-/* 	 Species2   atgcta??tag-tag */
-/* 	 Species3   atgttagctag-tgg */
-/* 	 Species4   atgttagctag-tag            */
-/* 	 ; */
-/*        End; */
+       Begin data;
+       Dimensions ntax=4 nchar=15;
+       Format datatype=dna symbols="ACTG" missing=? gap=-;
+       Matrix
+	 Species1   atgctagctagctcg
+	 Species2   atgcta??tag-tag
+	 Species3   atgttagctag-tgg
+	 Species4   atgttagctag-tag
+	 ;
+       End;
 
        os << "Begin data;" << std::endl;
        os << "Dimensions ntax="<< 1 << " nchar="<< posNum << ";" << std::endl;
        os << "Format datatype="<< seqData[0]->type_as_string()
-	 //  << " symbols=\" "<< <<  "\"" 
+	  << " symbols=\" "<< <<  "\"" 
 	 << " missing=" << ambig_char << " gap=-;" << std::endl;
        os << "matrix" << std::endl;
        
@@ -1868,7 +2149,7 @@ public:
 
    }
 
-
+   */
 
 
 
@@ -1915,7 +2196,7 @@ public:
 /*  	 if (filter_gap_abmig_symbols) */
 /*  	 { */
 /* 	   // Check whether this is a position we do not want to consider. */
-/*  	   if (datatype == CSequence_Mol::dna && (is_DNA_iupac_ambig(c) || c == '-') ) */
+/*  	   if (datatype == CSequence_Mol::dna && (is_DNA_ambig(c) || c == '-') ) */
 /*  	   { */
 /* 	     contains_gap_ambig = true; */
 /*  	   } */
@@ -1936,7 +2217,7 @@ public:
 	 for (j=0; j < taxaNum; ++j) // Copy all symbols to site pattern vector
 	 {
 	   c = tax[j][i];
-	   if (is_DNA_iupac_ambig(c) || c == '-')
+	   if (is_DNA_ambig(c) || c == '-')
  	   {
 	     contains_gap_ambig = true;
  	   }
@@ -1976,7 +2257,7 @@ public:
 
      // Formula from "Statistical Tests of Models of DNA Substitution", Journal of Molecular Evolution, Springer-Verlag NewYork Inc. 1993
      // Nick Goldman
-     // Formula: \sum   N_i*ln(N_i) - N*ln(N), where N_i are the pattern frequencies and N ist the total number of sites.
+     // Formula: \sum   N_i*ln(N_i) - N*ln(N), where N_i are the pattern frequencies and N is the total number of sites.
 
      while (it != it_end)
      {
@@ -2032,7 +2313,7 @@ public:
 /*  	 if (filter_gap_abmig_symbols) */
 /*  	 { */
 /* 	   // Check whether this is a position we do not want to consider. */
-/*  	   if (datatype == CSequence_Mol::dna && (is_DNA_iupac_ambig(c) || c == '-') ) */
+/*  	   if (datatype == CSequence_Mol::dna && (is_DNA_ambig(c) || c == '-') ) */
 /*  	   { */
 /* 	     contains_gap_ambig = true; */
 /*  	   } */
@@ -2053,7 +2334,7 @@ public:
 	 for (j=0; j < taxaNum; ++j) // Copy all symbols to site pattern vector
 	 {
 	   c = tax[j][i];
-	   if (is_DNA_iupac_ambig(c) || c == '-')
+	   if (is_DNA_ambig(c) || c == '-')
  	   {
 	     contains_gap_ambig = true;
  	   }
@@ -2174,7 +2455,6 @@ public:
 
      int i, n=seqData.size();
 
-     // Recently resolved memory leak:
      for (i=0; i<n; ++i)
          delete seqData[i];
 
@@ -2232,6 +2512,7 @@ public:
    {
      if (i < seqs.taxaNum)
      {
+       ++taxaNum;
        add_seq(seqs.seqData[i]);
        seqs.remove(i);
      }
@@ -2301,9 +2582,67 @@ public:
 
      add_seq(seq);
 
-     // Further autodetect stuff???????
+     // Further auto detect stuff???????
+   }
 
+   void vectors_of_site_coverages_and_site_entropies_DNA(std::vector<float> &coverage, std::vector<float> &entropies)
+   {
+     int symbols[256];
 
+     coverage.clear();
+     entropies.clear();
+
+     unsigned     site_index, seq_index;
+     const char   **seq_strs;       
+
+     seq_strs = new const char* [taxaNum];
+
+     for (seq_index=0; seq_index<taxaNum; ++seq_index)
+     {
+       seq_strs[seq_index] =  get_Seq_Data(seq_index);
+     }
+
+     for (site_index = 0; site_index < posNum; ++site_index)
+     {
+       std::memset(symbols, 0, 256*sizeof(int));
+
+       for (seq_index = 0; seq_index < taxaNum; ++seq_index)
+       {
+	 unsigned char c = seq_strs[seq_index][site_index];
+	 c = toupper_lookup[c];
+	 ++symbols[c];
+       }
+
+       int A    = symbols[(unsigned char)'A'];
+       int C    = symbols[(unsigned char)'C'];
+       int G    = symbols[(unsigned char)'G'];
+       int T    = symbols[(unsigned char)'T']+symbols[(unsigned char)'U'];
+       //       int gaps = symbols[(int)'-'];
+       int amb  = symbols[(unsigned char)'R']+symbols[(unsigned char)'Y']+symbols[(unsigned char)'S']+symbols[(unsigned char)'W']+symbols[(unsigned char)'K']
+	         +symbols[(unsigned char)'M']+symbols[(unsigned char)'B']+symbols[(unsigned char)'D']+symbols[(unsigned char)'H']+symbols[(unsigned char)'V']+symbols[(unsigned char)'N']+symbols[(unsigned char)'?'];
+
+       float all = A+C+G+T;
+       float a   = (float)A/all;
+       float c   = (float)C/all;
+       float g   = (float)G/all;
+       float t   = (float)T/all;
+
+       float cov = (all+amb)/taxaNum;
+       float ent = 0;
+       if (a>0)
+	 ent -= a*log(a);
+       if (c>0)
+	 ent -= c*log(c);
+       if (g>0)
+	 ent -= g*log(g);
+       if (t>0)
+	 ent -= t*log(t);
+
+       coverage.push_back(cov);
+       entropies.push_back(ent);
+     }
+
+     delete [] seq_strs;
    }
 
 
@@ -2325,7 +2664,7 @@ public:
 	 for(j=0; j<posNum; ++j)
 	 {
 	   c = the_seq[j];
-	   if (is_DNA_iupac_ambig(c) || c == '-')
+	   if (is_DNA_ambig(c) || c == '-')
 	   {
 	     gap_N_positions[j] = true;
 	   }
@@ -2413,7 +2752,7 @@ public:
    }
 
 
-   void replace_sequence_interval(const CSequences2 &s, unsigned pos1=0, unsigned pos2=-1u) 
+   void replace_sequence_interval(const CSequences2 &s, faststring::size_t pos1=0, faststring::size_t pos2=faststring::npos) 
    {
      determine_map_of_sequence_names();
 
@@ -2658,7 +2997,7 @@ public:
 	 {
 	   c = tax[j][i];
 	   ++count_all;
-	   if ( !(is_DNA_iupac_ambig(c) || c == '-' ) )
+	   if ( !(is_DNA_ambig(c) || c == '-' ) )
 	     ++count_non_ambig_non_gap;
 	 }
        }
@@ -2739,15 +3078,24 @@ public:
    // 2:  Compute gap distance, i.e. count gap versus non-gap nucleotides.
    // The result is in the range from 0..1.
    // Ns are treated as mismatch. If this is not desired, use the other overwrite of this function below.
+
+
    double sequence_distance(unsigned s1, unsigned s2, unsigned begin_range, unsigned end_range, unsigned flag=0)
    {
-     char   c1, c2;
-
      if (s1 >= taxaNum || s2 >= taxaNum)
        return -1;
 
      CSequence_Mol* seq1 = seqData[s1];
      CSequence_Mol* seq2 = seqData[s2];
+     
+     return sequence_distance(seq1, seq2, begin_range, end_range, flag=0);
+   }
+
+
+
+   double sequence_distance(CSequence_Mol* seq1, CSequence_Mol* seq2, unsigned begin_range, unsigned end_range, unsigned flag=0)
+   {
+     char   c1, c2;
 
      // Do some range checks:
      if (end_range < begin_range) // This is considered a major error and the caller should correct this problem.
@@ -2855,7 +3203,7 @@ public:
 
      if (s1 >= taxaNum || s2 >= taxaNum)
      {
-       differences = -1;
+       differences = UINT_MAX;
        return;
      }
 
@@ -3005,7 +3353,7 @@ public:
      for (i=0; i<taxaNum; ++i)
      {
        v.push_back(seqData[i]->getSeq_faststring());
-       v[i].c_str();  // Make buffer 0-teminated.
+       v[i].c_str();  // Make buffer 0-terminated.
      }
    }
 

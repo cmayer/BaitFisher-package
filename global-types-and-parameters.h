@@ -1,5 +1,6 @@
-/*  BaitFisher (version 1.2.7) a program for designing DNA target enrichment baits
- *  Copyright 2013-2016 by Christoph Mayer
+/*  BaitFisher (version 1.2.8) a program for designing DNA target enrichment baits
+ *  BaitFilter (version 1.0.6) a program for selecting optimal bait regions
+ *  Copyright 2013-2017 by Christoph Mayer
  *
  *  This source file is part of the BaitFisher-package.
  * 
@@ -39,7 +40,7 @@
 #define DEBUG
 
 #define PROGNAME "Bait-Filter"
-#define VERSION  "1.0.5"
+#define VERSION  "1.0.6"
 
 extern faststring                       global_bait_filename;     //
 extern char                             global_mode;              //
@@ -53,24 +54,24 @@ extern faststring                       global_blast_db;  //
 
 extern faststring                       global_blast_extra_commandline;
 extern faststring                       global_blast_evalue_commandline;
-
 extern unsigned                         global_thinning_step_width;
-
 extern bool                             global_use_GUI;
 extern unsigned                         global_conversion_mode;
-
 extern faststring                       global_ProbeID_prefix;
-
 extern unsigned                         global_verbosity;
+extern faststring                       global_blast_result_file;
+
+
+extern bool skip_blast;
 
 #define macromax(x,y) ((x)<(y) ? (y) : (x))
 #define macromin(x,y) ((x)<(y) ? (x) : (y))
 
 #ifdef  DEBUG
-#define DEBUGOUT1(x)        std::cerr << x                << std::endl;
-#define DEBUGOUT2(x,y)      std::cerr << x << y           << std::endl;
-#define DEBUGOUT3(x,y,z)    std::cerr << x << y << z      << std::endl;
-#define DEBUGOUT4(x,y,z,w)  std::cerr << x << y << z << w << std::endl;
+#define DEBUGOUT1(x)        std::cerr << x                << '\n';
+#define DEBUGOUT2(x,y)      std::cerr << x << y           << '\n';
+#define DEBUGOUT3(x,y,z)    std::cerr << x << y << z      << '\n';
+#define DEBUGOUT4(x,y,z,w)  std::cerr << x << y << z << w << '\n';
 #else
 #define DEBUGOUT1(x)
 #define DEBUGOUT2(x,y)
@@ -80,8 +81,12 @@ extern unsigned                         global_verbosity;
 
 
 void good_bye_and_exit(FILE *of, int);
+void good_bye_and_exit(std::ostream&, int);
 void init_param();
-void read_and_init_parameters(int argc, char** argv);
+void read_and_init_parameters(int argc, char** argv, std::ostream &);
 void print_parameters(FILE*, const char *s);
+void print_parameters(std::ostream&, const char *s);
+void print_calling_command_line(FILE*,unsigned, char**);
+void print_calling_command_line(std::ostream&,unsigned, char**);
 
 #endif

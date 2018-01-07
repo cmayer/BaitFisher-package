@@ -1,5 +1,6 @@
-/*  BaitFisher (version 1.2.7) a program for designing DNA target enrichment baits
- *  Copyright 2013-2016 by Christoph Mayer
+/*  BaitFisher (version 1.2.8) a program for designing DNA target enrichment baits
+ *  BaitFilter (version 1.0.6) a program for selecting optimal bait regions
+ *  Copyright 2013-2017 by Christoph Mayer
  *
  *  This source file is part of the BaitFisher-package.
  * 
@@ -83,7 +84,7 @@ class CSequence_Mol
 
   private:
   faststring      full_name;   // with description after first space
-  faststring      short_name;  // without desciption after first space
+  faststring      short_name;  // without description after first space
   faststring      description; // description only
 
   faststring      data;
@@ -93,7 +94,7 @@ class CSequence_Mol
   bool            numbers_of_residues_computed;
 
   // General rule: If we convert symbols, we count the new symbols we have in memory,
-  // not the symbols in the file. This is more consitent.
+  // not the symbols in the file. This is more consistent.
   //
   unsigned        number_of_AAs;           // Does not include Xs and ?
   unsigned        number_of_DNARNA_bases;  // Includes Us but not ambigs
@@ -121,10 +122,10 @@ class CSequence_Mol
     full_name.removeSpacesBack();
     full_name.removeSpacesFront();
 
-    unsigned pos_description = full_name.find(' ');
-    unsigned full_name_len   = full_name.size();
+    faststring::size_t pos_description = full_name.find(' ');
+    faststring::size_t full_name_len   = full_name.size();
 
-    if (pos_description == -1u) // no space -> no sequence description
+    if (pos_description == faststring::npos) // no space -> no sequence description
     {
       pos_description = full_name.size();
       short_name.assign(full_name.begin(), full_name.begin() + pos_description);
@@ -386,7 +387,7 @@ class CSequence_Mol
 	--number_raw_original_length; // we do not count spaces
       }                              // Spaces are removed
       else if ( c=='-' || c=='*')     // What do we do with gaps and *s - Here they are removed,
-	                              // but their positions are stored in order to able to reconstuct the origianl coordinates.
+	                              // but their positions are stored in order to able to reconstruct the original coordinates.
       {                               // I don't really know why we tolerate '*' ? They occur in protein sequences as stop codons.
 	gap_and_star_koords.push_back(pos);    // If we want to reconstruct the true position in the sequence,
 	                              // we need to keep track of the positions we cut out.
@@ -407,7 +408,7 @@ class CSequence_Mol
       {
 	// we do not count this -just to be consistent before we bail out 
 	--number_raw_original_length;
-	infile.clear(CFile::__fail_flag);
+	infile.clear(CFile::__fail_reason1 | CFile::__fail_flag);
 	break;
       }
       c = infile.getchar();
@@ -510,7 +511,7 @@ class CSequence_Mol
 	--number_raw_original_length; // we do not count spaces
       }                              // Spaces are removed
       else if ( c=='-' || c=='*')     // What do we do with gaps and *s - Here they are removed,
-	                              // but their positions are stored in order to able to reconstuct the origianl coordinates.
+	                              // but their positions are stored in order to able to reconstruct the original coordinates.
       {                               // I don't really know why we tolerate '*' ? They occur in protein sequences as stop codons.
 
 	if (c=='-')
@@ -553,7 +554,7 @@ class CSequence_Mol
       {
 	// we do not count this -just to be consistent before we bail out 
 	--number_raw_original_length;
-	infile.clear(CFile::__fail_flag);
+	infile.clear(CFile::__fail_reason1 | CFile::__fail_flag);
 	break;
       }
       c = infile.getchar();
@@ -627,7 +628,7 @@ class CSequence_Mol
 	--number_raw_original_length; // we do not count spaces
       }                              // Spaces are removed
       else if ( c=='-' || c=='*')     // What do we do with gaps and *s - Here they are removed,
-	                              // but their positions are stored in order to able to reconstuct the origianl coordinates.
+	                              // but their positions are stored in order to able to reconstruct the original coordinates.
       {                               // I don't really know why we tolerate '*' ? They occur in protein sequences as stop codons.
 
 	if (c=='-')
@@ -668,7 +669,7 @@ class CSequence_Mol
       {
 	// we do not count this -just to be consistent before we bail out 
 	--number_raw_original_length;
-	infile.clear(CFile::__fail_flag);
+	infile.clear(CFile::__fail_reason2 | CFile::__fail_flag);
 	break;
       }
       c = infile.getchar();
@@ -724,7 +725,7 @@ class CSequence_Mol
       {
 	--number_raw_original_length; // we do not count spaces
       }                              
-      else if ( c=='-' || c=='*')     // What do we do with gaps and *s - Here they are removed, but their positions are stored in order to reconstuct the origianl coordinates.
+      else if ( c=='-' || c=='*')     // What do we do with gaps and *s - Here they are removed, but their positions are stored in order to reconstruct the original coordinates.
       {                               // I don't really know why we tolerate '*' ?
 	gap_and_star_koords.push_back(pos);    // If we want to reconstruct the true position in the sequence,
 	                              // we need to keep track of the positions we cut out.
@@ -747,7 +748,7 @@ class CSequence_Mol
 	// -> we set the fail flag, this informs the user that something went wrong
 	// We do not count this - just to be consistent before we bail out 
 	--number_raw_original_length;
-	infile.clear(CFile::__fail_flag);
+	infile.clear(CFile::__fail_reason1 | CFile::__fail_flag);
 	break;
       }
       c = infile.getchar();
@@ -790,7 +791,7 @@ class CSequence_Mol
       {
 	--number_raw_original_length; // we do not count spaces
       }
-      else if ( c=='-' || c=='*')     // What do we do with gaps and *s - Here they are removed, but their positions are stored in order to reconstuct the origianl coordinates.
+      else if ( c=='-' || c=='*')     // What do we do with gaps and *s - Here they are removed, but their positions are stored in order to reconstruct the original coordinates.
       {                                        // I don't really know why we tolerate '*' ?
 	gap_and_star_koords.push_back(pos);    // If we want to reconstruct the true position in the sequence,
 	                                       // we need to keep track of the positions we cut out.
@@ -810,7 +811,7 @@ class CSequence_Mol
 	// we do not count this -just to be consistent before we bail out 
 	--number_raw_original_length;
 
-	infile.clear(CFile::__fail_flag);
+	infile.clear(CFile::__fail_reason2 | CFile::__fail_flag);
 	break;
       }
       c = infile.getchar();
@@ -881,7 +882,7 @@ class CSequence_Mol
 	// we do not count this -just to be consistent before we bail out 
 	--number_raw_original_length;
 
-	infile.clear(CFile::__fail_flag);
+	infile.clear(CFile::__fail_reason1 | CFile::__fail_flag);
 	return;
       }
       c = infile.getchar();
@@ -908,11 +909,11 @@ class CSequence_Mol
   }
 
 
- CSequence_Mol(DataTypesEnum dt, faststring name, unsigned len, char p_general_ambig = '\0'):
+ CSequence_Mol(DataTypesEnum dt, faststring name, faststring::size_t len, char p_general_ambig = '\0'):
   full_name(name),type(dt), general_ambig(p_general_ambig),
     numbers_of_residues_computed(false), bitcode_recoded(false)
   {
-    if (len < -1u)
+    if (len < faststring::npos)
       ++len;
     data.reserve(len);
 
@@ -933,8 +934,8 @@ class CSequence_Mol
   // pos2 must be the index after the last column.
   // pos2-pos1 must be the number of bases that are copied to this sequence.
   //**************************************************************************
- CSequence_Mol(const CSequence_Mol& s, unsigned pos1=0, unsigned pos2 = -1u):
-  full_name(s.full_name),
+ CSequence_Mol(const CSequence_Mol& s, faststring::size_t pos1=0, faststring::size_t pos2 = faststring::npos):
+    full_name(s.full_name),
     short_name(s.short_name),
     description(s.description),
     type(s.type),
@@ -1013,7 +1014,7 @@ class CSequence_Mol
     {
       while (it != it_end)
       {
-	if (!is_DNA_iupac_ambig(*it))
+	if (!is_DNA_ambig(*it))
 	  return false;
 	++it;
       }
@@ -1049,7 +1050,7 @@ class CSequence_Mol
       while (it != it_end)
       {
 	//		std::cout << "Checking " << *it << std::endl;
-	if ( !(is_DNA_iupac_ambig(*it) || *it == '-') )
+	if ( !(is_DNA_ambig(*it) || *it == '-') )
 	{
 	  //	  	  std::cout << "Returning false." << std::endl;
 	  return false;
@@ -1077,7 +1078,7 @@ class CSequence_Mol
   }
 
 
-  unsigned length() const
+  faststring::size_t length() const
   {
     return data.size();
   }
@@ -1136,7 +1137,7 @@ class CSequence_Mol
       //    std::cerr << "General ambig: " << general_ambig  << std::endl;
       if (auto_detect_ambig_detect_conflict() )
       {
-	std::cerr << "Conflict in amgiguity code used in imported sequence." << std::endl;
+	std::cerr << "Conflict in ambiguity code used in imported sequence." << std::endl;
       }
     }
     //    std::cerr << "General ambig: " << general_ambig  << std::endl;
@@ -1264,11 +1265,11 @@ class CSequence_Mol
     return data;
   }
 
-  faststring getPhylipName()
+  faststring getPhylipName(int mlen)
   {
     faststring str(short_name);
 
-    str.resize(10, ' ');
+    str.resize(mlen, ' ');
     return str;
   }
 
@@ -1360,7 +1361,7 @@ class CSequence_Mol
 	++number_of_DNARNA_bases;
       }
 
-      if (is_DNA_iupac_ambig(c))
+      if (is_DNA_ambig(c))
 	++number_of_DNARNA_amgibs;
 
       if (is_aa_or_aa_ambig_extended(c) && c!= 'X' && c != '?')
@@ -1476,7 +1477,7 @@ class CSequence_Mol
     }
   }
 
-  unsigned find_pos_first_symbol_not_in_alphabet(const char * alphabet=NULL)
+  faststring::size_t find_pos_first_symbol_not_in_alphabet(const char * alphabet=NULL)
   {
     if (alphabet == NULL)
     {
@@ -1490,14 +1491,14 @@ class CSequence_Mol
       }
       else
       {
-	return -1u;
+	return faststring::npos;
       }
     }
 
     return data.find_first_not_of(alphabet);
   }
 
-  // Fills str with the sequnce data, that contains gaps and stars, that had been removed
+  // Fills str with the sequence data, that contains gaps and stars, that had been removed
   // temporarily.
   void getSequence_fill_in_gaps_and_stars(faststring &str)
   {
@@ -1694,17 +1695,17 @@ class CSequence_Mol
 
   void writeSequence(FILE *of, unsigned char_per_line=50) //const
   {
-    writeSequence_fasta(of, 0, -1u, full_name.c_str(), char_per_line);
+    writeSequence_fasta(of, 0, faststring::npos, full_name.c_str(), char_per_line);
   }
 
   void writeSequence_fasta(FILE *of, unsigned char_per_line=50) //const
   {
-    writeSequence_fasta(of, 0, -1u, full_name.c_str(), char_per_line);
+    writeSequence_fasta(of, 0, faststring::npos, full_name.c_str(), char_per_line);
   }
 
   void writeSequence(FILE *of,
-		     unsigned    pos_beg,
-		     unsigned    pos_end,
+		     faststring::size_t  pos_beg,
+		     faststring::size_t  pos_end,
 		     const char  *s_name,
 		     unsigned    char_per_line=50) const
   {
@@ -1713,10 +1714,10 @@ class CSequence_Mol
 
 
   void writeSequence_fasta(FILE *of,
-			   unsigned    pos_beg, // 0 based
-			   unsigned    pos_end, // 0 based, stop index
-			   const char  *s_name,
-			   unsigned    char_per_line=50) const
+			   faststring::size_t    pos_beg, // 0 based
+			   faststring::size_t    pos_end, // 0 based, stop index
+			   const char            *s_name,
+			   faststring::size_t    char_per_line=50) const
   {
     const char *beg = data.begin() + pos_beg;
     const char *end = data.begin() + pos_end;
@@ -1725,10 +1726,10 @@ class CSequence_Mol
 /*     if (bitcode_recoded) */
 /*       backrecode_bitcode_sequence(); */
 
-    if (pos_end == -1u || end > data.end() )
+    if (pos_end == faststring::npos || end > data.end() )
       end = data.end();
 
-    if (char_per_line == -1u)
+    if (char_per_line == faststring::npos)
       char_per_line = data.length();
 
     fprintf(of, ">%s\n", s_name);
@@ -1749,30 +1750,30 @@ class CSequence_Mol
   }
 
   // Some programs do not accept too many Ns in a row.
-  // This function export sequences so that Nregions are collapsed
+  // This function export sequences so that N-regions are collapsed
   // to a maximum number of successive Ns.
   // USE WITH CAUTION: This function changes your sequence data!!!
-  // The output is not identical to your original sequnece data.
+  // The output is not identical to your original sequence data.
 
 
   void writeSequence_fasta_collaps_NX_regions(FILE *of,
-			   unsigned    char_per_line=50,
-		           unsigned    maximum_number_of_successive_NXs=100)
+					      faststring::size_t char_per_line=50,
+					      faststring::size_t maximum_number_of_successive_NXs=100)
   {
     writeSequence_fasta_collaps_NX_regions(of, 
 					   0,
-					   -1u,
+					   faststring::npos,
 					   full_name.c_str(),
 					   char_per_line,
 					   maximum_number_of_successive_NXs);
   }
 
   void writeSequence_fasta_collaps_NX_regions(FILE *of,
-					      unsigned    pos_beg, // 0 based
-					      unsigned    pos_end, // 0 based , stop index
-					      const char  *s_name,
-					      unsigned    char_per_line=50,
-					      unsigned    maximum_number_of_successive_NXs=100) const
+					      faststring::size_t pos_beg, // 0 based
+					      faststring::size_t pos_end, // 0 based , stop index
+					      const char         *s_name,
+					      faststring::size_t           char_per_line=50,
+					      faststring::size_t           maximum_number_of_successive_NXs=100) const
   {
     const char *beg = data.begin() + pos_beg;
     const char *end = data.begin() + pos_end;
@@ -1781,13 +1782,13 @@ class CSequence_Mol
 /*     if (bitcode_recoded) */
 /*       backrecode_bitcode_sequence(); */
 
-    if (pos_end == -1u || end > data.end() )
+    if (pos_end == faststring::npos || end > data.end() )
       end = data.end();
 
     fprintf(of, ">%s\n", s_name);
 
-    unsigned chars_in_this_line=0;
-    unsigned tmp_succNs=0;
+    faststring::size_t chars_in_this_line=0;
+    faststring::size_t tmp_succNs=0;
 
     while (beg != end)
     {
@@ -1829,11 +1830,11 @@ class CSequence_Mol
   }
 
   void writeSequence_partial_fasta(FILE *of,
-				   unsigned    pos_beg, // 0 based
-				   unsigned    pos_end, // 0 based , stop index
-				   const char  *s_name,
-				   unsigned    char_per_line=50,
-				   bool        degap=true) const
+				   faststring::size_t pos_beg, // 0 based
+				   faststring::size_t pos_end, // 0 based , stop index
+				   const char         *s_name,
+				   faststring::size_t           char_per_line=50,
+				   bool               degap=true) const
   {
     const char *beg = data.begin() + pos_beg;
     const char *end = data.begin() + pos_end;
@@ -1841,12 +1842,12 @@ class CSequence_Mol
 /*     if (bitcode_recoded) */
 /*       backrecode_bitcode_sequence(); */
 
-    if (pos_end == -1u || end > data.end() )
+    if (pos_end == faststring::npos || end > data.end() )
       end = data.end();
 
     fprintf(of, ">%s\n", s_name);
 
-    unsigned chars_in_this_line=0;
+    faststring::size_t chars_in_this_line=0;
     
     if (degap)
     {
@@ -1890,7 +1891,7 @@ class CSequence_Mol
 					std::vector<unsigned> &site_filter,
 					int         offset,   // 0 if site_filter is 0 based, 1 if site_filter is 1 based
 					const char  *s_name,
-					unsigned    char_per_line=50) const
+					faststring::size_t    char_per_line=50) const
   {
     const char *beg = data.begin();
     const char *end = data.end();
@@ -1900,7 +1901,7 @@ class CSequence_Mol
 
     fprintf(of, ">%s\n", s_name);
 
-    unsigned chars_in_this_line=0;
+    faststring::size_t chars_in_this_line=0;
     int i=offset;
 
     {
@@ -1925,8 +1926,8 @@ class CSequence_Mol
   }
 
   void writeSequence_phylip(FILE *of,
-			    unsigned    pos_beg, // 0 based
-			    unsigned    pos_end, // 0 based, stop index.
+			    faststring::size_t pos_beg, // 0 based
+			    faststring::size_t pos_end, // 0 based, stop index.
 			   const char  *s_name) const
   {
 /*     if (bitcode_recoded) */
@@ -1935,7 +1936,7 @@ class CSequence_Mol
     const char *beg = data.begin() + pos_beg;
     // const char *end = data.begin() + pos_end;
  
-/*     if (pos_end == -1u || end > data.end() ) */
+/*     if (pos_end == faststring::npos || end > data.end() ) */
 /*       end = data.end(); */
 
     unsigned name_len = strlen(s_name);
@@ -1956,10 +1957,10 @@ class CSequence_Mol
   // Clearly pos_end > pos_beg. In the empty range, pos_end = pos_beg+1.
 
   void writeSequence_revComp(FILE *of,
-			     unsigned pos_beg,  // 0 based index
-			     unsigned pos_end,  // 0 based index after the last pos.
+			     faststring::size_t pos_beg,  // 0 based index
+			     faststring::size_t pos_end,  // 0 based index after the last pos.
 			     const char *s_name,
-			     unsigned    char_per_line=50) const
+			     faststring::size_t    char_per_line=50) const
   {
 /*     if (bitcode_recoded) */
 /*       backrecode_bitcode_sequence(); */
@@ -1967,7 +1968,7 @@ class CSequence_Mol
     const char *beg = data.begin() + pos_beg;
     const char *end = data.begin() + pos_end;
 
-    unsigned interleaved = char_per_line;
+    faststring::size_t interleaved = char_per_line;
 
     fprintf(of, ">%s\n", s_name);
 
@@ -2004,7 +2005,7 @@ class CSequence_Mol
     char *pos = data.begin();
     char *end = data.end();
 
-    unsigned len = end - pos;
+    faststring::size_t len = end - pos;
 
     while (pos != end)
     {
@@ -2055,7 +2056,7 @@ class CSequence_Mol
   {
     char *pos = data.begin();
     char *end = data.end();
-    char last = 'N';  // An island is not counted if located at the beginning or end of the sequnce.
+    char last = 'N';  // An island is not counted if located at the beginning or end of the sequence.
 
     unsigned long long len = end - pos;
     
@@ -2124,7 +2125,7 @@ class CSequence_Mol
   }
 
 
-  unsigned getSeqCoord(const char *seq_pos)
+  faststring::size_t getSeqCoord(const char *seq_pos)
   {
     return seq_pos - data.begin() + 1;
   }
@@ -2134,12 +2135,12 @@ class CSequence_Mol
     return general_ambig;
   }
 
-  unsigned getSeqCoord_gap_correted(const char *seq_pos, unsigned &seq_gap_offset)
+  faststring::size_t getSeqCoord_gap_correted(const char *seq_pos, faststring::size_t &seq_gap_offset)
   {
-    unsigned corrected_pos = seq_pos - data.begin()+1+seq_gap_offset;
+    faststring::size_t corrected_pos = seq_pos - data.begin()+1+seq_gap_offset;
 
-    unsigned i = seq_gap_offset;
-    unsigned N = gap_and_star_koords.size();
+    faststring::size_t i = seq_gap_offset;
+    faststring::size_t N = gap_and_star_koords.size();
 
     //   std::cerr << "Entering getSeqCoord_gap_correted i: " << i << " N: " << N << " corr coord: " << corrected_pos << std::endl; 
 
@@ -2157,7 +2158,7 @@ class CSequence_Mol
   }
 
 
-  void writeSequence(std::ostream &os, unsigned char_per_line)
+  void writeSequence(std::ostream &os, faststring::size_t char_per_line)
   {
     char *pos = data.begin();
     char *end = data.end();
@@ -2192,7 +2193,7 @@ class CSequence_Mol
 /*   } */
 
 
-  void readRawFastaSequence(CFile& infile, unsigned &num)
+  void readRawFastaSequence(CFile& infile, faststring::size_t &num)
   {
     char     c   = '\0';
     bool     first_line = true;
@@ -2312,7 +2313,7 @@ class CSequence_Mol
     }
     find_shortname_and_description();
 
-    // Ignore the sequence data of this sequnce:
+    // Ignore the sequence data of this sequence:
     c = infile.peekchar();
     while ( !infile.fail() && c != '>' )
     {
@@ -2364,10 +2365,10 @@ class CSequence_Mol
     }
   }
 
-  // it1 is the first position to fill. This coorindate must be 0 based.
+  // it1 is the first position to fill. This cooridnate must be 0 based.
   // it2 is the position behind the last position to fill. It must be 0 based.
 
-  void fill_range_with(unsigned pos1, unsigned pos2, char c)
+  void fill_range_with(faststring::size_t pos1, faststring::size_t pos2, char c)
   {
     numbers_of_residues_computed  = false;
 
@@ -2392,7 +2393,7 @@ class CSequence_Mol
   void readFastaSequence_toupper_ambig2N_removegaps(CFile& infile)
   {
     char      c   = '\0';
-    unsigned  pos = 0;
+    faststring::size_t  pos = 0;
 
     full_name = "";
     data.clear();
@@ -2441,7 +2442,7 @@ class CSequence_Mol
   void readFastaSequence_toupper_removegaps(CFile& infile)
   {
     char      c   = '\0';
-    unsigned  pos = 0;
+    faststring::size_t  pos = 0;
 
     full_name = "";
     data.clear();
@@ -2494,7 +2495,7 @@ class CSequence_Mol
   }
 
 
-  // Has resently been renamed: gaps2N -> gaps2ambig
+  // Has recently been renamed: gaps2N -> gaps2ambig
   // since we want to prepare for reading proteins.
   void readFastaSequence_toupper_ambig2N_gaps2ambig(CFile& infile)
   {
@@ -2576,7 +2577,7 @@ class CSequence_Mol
     {}
   }
 
-  // chrashed in this function on linux - do not know why yet 64 bit problem??
+  // Crashed in this function on linux - do not know why yet 64 bit problem??
   void check_allowed_symbols_in_sequence(const char *symbols)
   {
     size_t pos=0;
@@ -2584,7 +2585,7 @@ class CSequence_Mol
     pos = data.find_first_not_of(symbols, pos);
     while (pos != faststring::npos)
     {
-      std::cerr << "Found illegal symbol in sequnces: " << short_name 
+      std::cerr << "Found illegal symbol in sequence: " << short_name 
 		<< " Position " << pos << ". Found char " << data[pos] << std::endl;
 
       ++pos;
@@ -2616,7 +2617,7 @@ class CSequence_Mol
   void readFastaSequence_generic(CFile& infile, processing_flag pflag)
   {
     char     c   = '\0';
-    unsigned  pos = 0;
+    faststring::size_t  pos = 0;
  
     // TODO: Prepare to remove gaps and/or stars:
 
@@ -2744,9 +2745,9 @@ class CSequence_Mol
   }
 
 
-  bool range_contains_gaps_or_Ns(unsigned pos1, unsigned pos2)
+  bool range_contains_gaps_or_Ns(faststring::size_t pos1, faststring::size_t pos2)
   {
-    unsigned len = length();
+    faststring::size_t len = length();
 
     if (pos1 >= pos2 || pos1 > len) // Empty range
       return false;
@@ -2772,11 +2773,28 @@ class CSequence_Mol
       return false;
   }
 
+  // Requirement: Amino acids have to encoded as  upper case characters.
+  // Returns -1 in case the sequence is not proper blosum code.
+  // Returns 0 or positive value indicating the number of Js that have been replaced.
+  int check_protein_sequence_for_blosum_compatibility(unsigned &refpos)
+  {
+    unsigned pos;
+
+    int  count = data.replace_char_count('J','X');
+    bool OK    = is_aa_blosum_code_or_gap_sequence(data.begin(), data.end(), &pos);
+
+    if (!OK)
+    {
+      refpos = pos;
+      return -1;
+    }
+
+    return count;    
+  }
 
 
 
-
-  // void readFastaSequence(CFile& infile) is depricated:
+  // void readFastaSequence(CFile& infile) is deprecated:
   // Use one of the other read functions below.
   // This function used to by of type
   // toupper_ambig2N_removegaps

@@ -1,5 +1,6 @@
-/*  BaitFisher (version 1.2.7) a program for designing DNA target enrichment baits
- *  Copyright 2013-2016 by Christoph Mayer
+/*  BaitFisher (version 1.2.8) a program for designing DNA target enrichment baits
+ *  BaitFilter (version 1.0.6) a program for selecting optimal bait regions
+ *  Copyright 2013-2017 by Christoph Mayer
  *
  *  This source file is part of the BaitFisher-package.
  * 
@@ -39,8 +40,77 @@
 #include <cerrno>
 #include <list>
 #include <cfloat>
+#include <climits>
 
 #define _MINBUFFER_CAPACITY 4
+
+// Uncomment when using a 64bit windows machine. 
+// #define _WIN64
+
+// Includes the symbols which occur in the blosum matrices: 
+const char toupper_lookup[] = {
+  '\0',  '\1',  '\2',  '\3',  '\4',  '\5',  '\6',  '\7', '\10', '\11', //   0- 9
+ '\12', '\13', '\14', '\15', '\16', '\17', '\20', '\21', '\22', '\23', //  10-19
+ '\24', '\25', '\26', '\27', '\30', '\31', '\32', '\33', '\34', '\35', //  20-29
+ '\36', '\37', '\40', '\41', '\42', '\43', '\44', '\45', '\46', '\47', //  30-39
+ '\50', '\51', '\52', '\53', '\54', '\55', '\56', '\57', '\60', '\61', //  40-49
+ '\62', '\63', '\64', '\65', '\66', '\67', '\70', '\71', '\72', '\73', //  50-59
+ '\74', '\75', '\76', '\77','\100','\101','\102','\103','\104','\105', //  60-69
+'\106','\107','\110','\111','\112','\113','\114','\115','\116','\117', //  70-79
+'\120','\121','\122','\123','\124','\125','\126','\127','\130','\131', //  80-89
+'\132','\133','\134','\135','\136','\137','\140','\101','\102','\103', //  90-99
+'\104','\105','\106','\107','\110','\111','\112','\113','\114','\115', // 100-109
+'\116','\117','\120','\121','\122','\123','\124','\125','\126','\127', // 110-119
+'\130','\131','\132','\173','\174','\175','\176','\177',               // 120-127
+// extended ascii code:
+'\200','\201',
+'\202','\203','\204','\205','\206','\207','\210','\211','\212','\213',
+'\214','\215','\216','\217','\220','\221','\222','\223','\224','\225',
+'\226','\227','\230','\231','\232','\233','\234','\235','\236','\237',
+'\240','\241','\242','\243','\244','\245','\246','\247','\250','\251',
+'\252','\253','\254','\255','\256','\257','\260','\261','\262','\263',
+'\264','\265','\266','\267','\270','\271','\272','\273','\274','\275',
+'\276','\277','\300','\301','\302','\303','\304','\305','\306','\307',
+'\310','\311','\312','\313','\314','\315','\316','\317','\320','\321',
+'\322','\323','\324','\325','\326','\327','\330','\331','\332','\333',
+'\334','\335','\336','\337','\340','\341','\342','\343','\344','\345',
+'\346','\347','\350','\351','\352','\353','\354','\355','\356','\357',
+'\360','\361','\362','\363','\364','\365','\366','\367','\370','\371',
+'\372','\373','\374','\375','\376','\377'
+};
+
+const char tolower_lookup[] = {
+  '\0',  '\1',  '\2',  '\3',  '\4',  '\5',  '\6',  '\7', '\10', '\11', //   0- 9
+ '\12', '\13', '\14', '\15', '\16', '\17', '\20', '\21', '\22', '\23', //  10-19
+ '\24', '\25', '\26', '\27', '\30', '\31', '\32', '\33', '\34', '\35', //  20-29
+ '\36', '\37', '\40', '\41', '\42', '\43', '\44', '\45', '\46', '\47', //  30-39
+ '\50', '\51', '\52', '\53', '\54', '\55', '\56', '\57', '\60', '\61', //  40-49
+ '\62', '\63', '\64', '\65', '\66', '\67', '\70', '\71', '\72', '\73', //  50-59
+ '\74', '\75', '\76', '\77','\100','\141','\142','\143','\144','\145', //  60-69
+'\146','\147','\150','\151','\152','\153','\154','\155','\156','\157', //  70-79
+'\160','\161','\162','\163','\164','\165','\166','\167','\170','\171', //  80-89
+'\172','\133','\134','\135','\136','\137','\140','\141','\142','\143', //  90-99
+'\144','\145','\146','\147','\150','\151','\152','\153','\154','\155', // 100-109
+'\156','\157','\160','\161','\162','\163','\164','\165','\166','\167', // 110-119
+'\170','\171','\172','\173','\174','\175','\176','\177',               // 120-127
+  // extended ascii code:
+'\200','\201',
+'\202','\203','\204','\205','\206','\207','\210','\211','\212','\213',
+'\214','\215','\216','\217','\220','\221','\222','\223','\224','\225',
+'\226','\227','\230','\231','\232','\233','\234','\235','\236','\237',
+'\240','\241','\242','\243','\244','\245','\246','\247','\250','\251',
+'\252','\253','\254','\255','\256','\257','\260','\261','\262','\263',
+'\264','\265','\266','\267','\270','\271','\272','\273','\274','\275',
+'\276','\277','\300','\301','\302','\303','\304','\305','\306','\307',
+'\310','\311','\312','\313','\314','\315','\316','\317','\320','\321',
+'\322','\323','\324','\325','\326','\327','\330','\331','\332','\333',
+'\334','\335','\336','\337','\340','\341','\342','\343','\344','\345',
+'\346','\347','\350','\351','\352','\353','\354','\355','\356','\357',
+'\360','\361','\362','\363','\364','\365','\366','\367','\370','\371',
+'\372','\373','\374','\375','\376','\377'
+};
+
+
 
 #define macromin(x,y) ((x)<(y) ? (x) : (y))
 //#define macromax(x,y) ((x)>(y) ? (x) : (y))
@@ -126,9 +196,8 @@ class faststring
 {
  public:
   // Shadow the "global" size_t typedef for this class.
-  typedef unsigned long size_t;
-
-  static const size_t npos = -1;
+  typedef unsigned size_t;
+  static const size_t npos = UINT_MAX;
 
   // Possibly even more efficient:
   //    Use pointer _end, _capacity_end instead of _len, _capacity
@@ -137,7 +206,7 @@ class faststring
  private:
   char       *_buf;
   size_t     _len;
-  size_t     _capacity;   // Capacity of container, i.e number of bytes availible
+  size_t     _capacity;   // Capacity of container, i.e number of bytes available
                            // for writing. If a capacity is requested by the user,
                            // an additional byte is reserved in order to be able to append
                            // the additional \0 which is appended by some function calls.
@@ -219,9 +288,12 @@ protected:
       std::cerr << "Critical error: malloc failed when requesting " << _capacity << " bytes in faststring constructor." << std::endl;
       exit(-1);
     }
+
+    memset(_buf, c, _len);
+    /*
     size_t i;
     for (i=0; i<n; ++i)
-      _buf[i] = c;
+    _buf[i] = c; */
   }
 
  faststring(int i)
@@ -233,7 +305,7 @@ protected:
       std::cerr << "Critical error: malloc failed when requesting " << _capacity << " bytes in faststring constructor." << std::endl;
       exit(-1);
     }
-    sprintf(_buf, "%d", i);
+    snprintf(_buf, _capacity, "%d", i);
     _len = strlen(_buf);
     //    std::cout << "Capacity: " << _capacity << std::endl;
   }
@@ -247,7 +319,7 @@ protected:
       std::cerr << "Critical error: malloc failed when requesting " << _capacity << " bytes in faststring constructor." << std::endl;
       exit(-1);
     }
-    sprintf(_buf, "%u", i);
+	snprintf(_buf, _capacity, "%d", i);
     _len = strlen(_buf);
     //    std::cout << "Capacity: " << _capacity << std::endl;
   }
@@ -269,7 +341,7 @@ protected:
       std::cerr << "Critical error: malloc failed when requesting " << _capacity << " bytes in faststring constructor." << std::endl;
       exit(-1);
     }
-    sprintf(_buf, "%0*u", len, i); // left padded with zeros (0)
+    snprintf(_buf,_capacity, "%0*u", len, i); // left padded with zeros (0)
     // Replace left padded zeros with fill char
 
     size_t pos = 0;
@@ -295,7 +367,7 @@ protected:
       std::cerr << "Critical error: malloc failed when requesting " << _capacity << " bytes in faststring constructor." << std::endl;
       exit(-1);
     }
-    sprintf(_buf, "%ld", i);
+    snprintf(_buf, _capacity, "%ld", i);
     _len = strlen(_buf);
   }
 
@@ -308,7 +380,7 @@ protected:
       std::cerr << "Critical error: malloc failed when requesting " << _capacity << " bytes in faststring constructor." << std::endl;
       exit(-1);
     }
-    sprintf(_buf, "%lu", i);
+    snprintf(_buf, _capacity,"%lu", i);
     _len = strlen(_buf);
   }
 
@@ -321,7 +393,7 @@ protected:
       std::cerr << "Critical error: malloc failed when requesting " << _capacity << " bytes in faststring constructor." << std::endl;
       exit(-1);
     }
-    sprintf(_buf, "%.*f", pres, f);
+    snprintf(_buf, _capacity,"%.*f", pres, f);
     _len = strlen(_buf);
   }
 
@@ -334,7 +406,7 @@ protected:
       std::cerr << "Critical error: malloc failed when requesting " << _capacity << " bytes in faststring constructor." << std::endl;
       exit(-1);
     }
-    sprintf(_buf, "%.*f", pres, f);
+    snprintf(_buf,_capacity, "%.*f", pres, f);
     _len = strlen(_buf);
   }
 
@@ -351,7 +423,7 @@ protected:
       std::cerr << "Critical error: malloc failed when requesting " << _capacity << " bytes in faststring constructor." << std::endl;
       exit(-1);
     }
-    sprintf(_buf, "%.*g", pres, f);
+    snprintf(_buf,_capacity, "%.*g", pres, f);
     _len = strlen(_buf);
 
     //    std::cerr << "faststring len: " << _len << std::endl;
@@ -430,9 +502,22 @@ protected:
     }
   }
 
-  void ensure_string_does_not_end_with(char c)
+/*   void ensure_string_does_not_end_with(char c) */
+/*   { */
+/*     while (_len > 0 && get_last() == c) */
+/*     { */
+/*       pop_back(); */
+/*     } */
+/*   } */
+
+// chomp in perl: (Removing a trailing \0 is not allowed.
+  void pop_trailing_characters(char c)
   {
-    while (_len > 0 && get_last() == c)
+    // get_last() and pop_back() both ensure that _len>0
+    if (c == '\0') // Problem: get_last returns \0 if the len=0, so we would end up with an infinite loop if we remove \0 in an empty string.
+      return;
+
+    while (get_last() == c)
     {
       pop_back();
     }
@@ -595,7 +680,7 @@ protected:
   // Could be made more efficient. TODO
   faststring& assign( size_t n, char c )
   {
-    erase();
+    clear();
     reserve(n);
     size_t i;
     for (i=0; i<n; ++i)
@@ -745,9 +830,9 @@ protected:
 
 
 
-  // Returns the part of the string following the last occurence of delim.
+  // Returns the part of the string following the last occurrence of delim.
   // If the character does not occur, the full string is returned.
-  // The second parameter can be used to specifiy a minimum number of characters that need to
+  // The second parameter can be used to specify a minimum number of characters that need to
   // be found before the extension. fpos_minimum == 1: The extension cannot start at index 0.
   faststring get_string_extension_or_all(char delim, size_t fpos_minimum = 0)
   {
@@ -765,9 +850,9 @@ protected:
     }    
   }
 
-  // Returns the part of the string following the last occurence of delim.
+  // Returns the part of the string following the last occurrence of delim.
   // If the character does not occur, the empty string is returned.
-  // The second parameter can be used to specifiy a minimum number of characters that need to
+  // The second parameter can be used to specify a minimum number of characters that need to
   // be found before the extension. fpos_minimum == 1: The extension cannot start at index 0.
   faststring get_string_extension(char delim, size_t fpos_minimum = 0)
   {
@@ -786,9 +871,9 @@ protected:
   }
 
 
-  // Returns the part of the string before the last occurence of delim.
+  // Returns the part of the string before the last occurrence of delim.
   // If the character does not occur, the empty string is returned.
-  // The second parameter can be used to specifiy a minimum number of characters that need to
+  // The second parameter can be used to specify a minimum number of characters that need to
   // be found before the extension. fpos_minimum == 1: The extension cannot start at index 0.
   faststring get_string_before_extension(char delim, size_t fpos_minimum = 0)
   {
@@ -806,9 +891,9 @@ protected:
     }    
   }
 
-  // Returns the part of the string before the last occurence of delim.
+  // Returns the part of the string before the last occurrence of delim.
   // If the character does not occur, the full string is returned.
-  // The second parameter can be used to specifiy a minimum number of characters that need to
+  // The second parameter can be used to specify a minimum number of characters that need to
   // be found before the extension. fpos_minimum == 1: The extension cannot start at index 0.
   faststring get_string_before_extension_or_all(char delim, size_t fpos_minimum = 0)
   {
@@ -885,7 +970,7 @@ protected:
   }
 
 
-  // Depricated. - Replaced by filename_dirname() which mimics the dirname command in linux much better.
+  // Deprecated. - Replaced by filename_dirname() which mimics the dirname command in linux much better.
   faststring filename_path()
   {
     faststring res(*this);
@@ -920,7 +1005,7 @@ protected:
   // If this sting contains the basename this is the base name with extension.
   // If the string ends with a directory, this is the directory.
   // Some special cases are catched.
-  // Depricated and replaced by the filename_basename function.
+  // Deprecated and replaced by the filename_basename function.
 
 /*   faststring filename_FileOrDirName() */
 /*   { */
@@ -957,7 +1042,7 @@ protected:
 
     while (i > 0)
     {
-      if (get_unckecked(i) == delim) // Yea, we found delim behind any occurence of break_at
+      if (get_unckecked(i) == delim) // Yea, we found delim behind any occurrence of break_at
       {
 	mode = 2;
 	break;
@@ -989,7 +1074,11 @@ protected:
   {
     size_t pos = find(delim,0);
     if (pos == npos)
+    {
+      post.clear();
+      pre = *this;
       return false;
+    }
     post = substr(pos+1, npos);
     pre  = substr(0, pos);
     return true;
@@ -1105,7 +1194,7 @@ protected:
     return *this;
   }
 
-  void toupper()
+  void toupper_slow()
   {
     char *b = begin();
     char *e = end();
@@ -1113,6 +1202,21 @@ protected:
     while (b != e)
     {
       *b = std::toupper(*b);
+      ++b;
+    }
+  }
+
+  void toupper()
+  {
+    unsigned char *b = (unsigned char *) begin();
+    unsigned char *e = (unsigned char *) end();
+
+//    char *b = (char *) begin();
+//    char *e = (char *) end();
+
+    while (b != e)
+    {
+      *b = toupper_lookup[*b];
       ++b;
     }
   }
@@ -1142,7 +1246,7 @@ protected:
       _len -= n;
   }
 
-  void tolower()
+  void tolower_slow()
   {
     char *b = begin();
     char *e = end();
@@ -1150,6 +1254,18 @@ protected:
     while (b != e)
     {
       *b = std::tolower(*b);
+      ++b;
+    }
+  }
+
+  void tolower()
+  {
+    unsigned char *b = (unsigned char *) begin();
+    unsigned char *e = (unsigned char *) end();
+
+    while (b != e)
+    {
+      *b = tolower_lookup[*b];
       ++b;
     }
   }
@@ -1208,7 +1324,7 @@ protected:
 
     if (res == 0)
       return (a._len < b._len );
-    //     return res; // Was wrong in ealier versions.
+    //     return res; // Was wrong in earlier versions.
     return (res < 0);
   }
 
@@ -1240,7 +1356,7 @@ protected:
     short res =  strncmp(a._buf, b._buf, m);
 
     // We do not have \0 terminated strings, so we have to restrict the initial
-    // comparisson to the length m.
+    // comparison to the length m.
 
     // If n is larger than the length of any of the two strings
     // we need to check the lengths.
@@ -1282,7 +1398,6 @@ protected:
     if (res == 0)
       return (a._len > b._len );
     return (res > 0);
-    //    return res; // Was wrong in ealier versions.
   }
 
   void removeSpacesFront(const char* delims="\r\n\t\v\f ")
@@ -1377,8 +1492,25 @@ protected:
      _len -= i-j;
    }
 
-
+   /*
    size_t count_symbol(char sym) const
+   {
+     size_t res=0;
+     const char *pos_it = begin();
+     const char *end_it = end();
+
+     while (pos_it != end_it)
+     {
+       if (*pos_it == sym)
+	 ++res;
+
+       ++pos_it;
+     }
+     return res;
+   }
+   */
+
+   size_t countChar(char sym) const
    {
      size_t res=0;
      const char *pos_it = begin();
@@ -1433,6 +1565,24 @@ protected:
 	 *pos_it = newChar;
        ++pos_it;
      }
+   }
+
+   int replace_char_count(char origChar, char newChar)
+   {
+     unsigned    count  = 0;
+           char *pos_it = begin();
+     const char *end_it = end();
+
+     while (pos_it != end_it)
+     {
+       if (*pos_it == origChar)
+       {
+	 ++count;
+	 *pos_it = newChar;
+       }
+       ++pos_it;
+     }
+     return count;
    }
 
 
@@ -1624,7 +1774,7 @@ protected:
    {
      faststring tmp;
      
-     size_t count_c = count_symbol(c);
+     size_t count_c = countChar(c);
 
      if (count_c > 0)
      {
@@ -1652,14 +1802,14 @@ protected:
    {
      char *tmp;
 
-     // Create and initialize list of optional arguments: 
+     // Create and initialise list of optional arguments: 
      va_list argList;
 
-#ifndef WIN32
+#if !defined (WIN32) && !defined (_WIN64)  
      va_start(argList, format);
      int N = vasprintf(&tmp, format, argList);
      va_end(argList);
-#else // In case we are on a WIN32 machine 
+#else // In case we are on a WIN32 or _WIN64 machine
      va_start(argList, format);
      tmp = new char [5000];
      int N = vsnprintf(tmp, 5000, format, argList);
@@ -1910,7 +2060,7 @@ protected:
      }
 
      memcpy(buffer+1, _buf, _len);
-     buffer[0] = _len;
+     buffer[0] = (unsigned char)_len;
      return buffer;
    }
 
@@ -1921,7 +2071,7 @@ protected:
      _len = bits;
 
      short i;
-     for (i=_len-1; i >= 0; --i)
+     for (i=(short)_len-1; i >= 0; --i)
      {
        // is l odd
        _buf[i] = (char)((char)(l%2)+'0');
@@ -1935,7 +2085,7 @@ protected:
      _len = digits;
 
      short i;
-     for (i=_len-1; i >= 0; --i)
+     for (i=(short)_len-1; i >= 0; --i)
      {
        // is l odd
        _buf[i] = (char)((char)(l%2)+'0');
@@ -1953,7 +2103,7 @@ protected:
      _len = hexes;
 
      short i;
-     for (i=_len-1; i >= 0; --i)
+     for (i=(short)_len-1; i >= 0; --i)
      {
        remainder = l%16;
 
@@ -1975,7 +2125,7 @@ protected:
      _len = digits;
 
      short i;
-     for (i=_len-1; i >= 0; --i)
+     for (i=(short)_len-1; i >= 0; --i)
      {
        remainder = l%16;
 
@@ -2067,6 +2217,11 @@ protected:
     _len = 0;
   }
 
+  void clear()
+  {
+    _len = 0;
+  }
+
   void reset()
   {
     if (_buf)
@@ -2077,14 +2232,6 @@ protected:
       _len = 0;
     }
   }
-
-  void clear()
-  {
-    _len = 0;
-  }
-
-
-
 
    //=================================================
    // The family of insert functions:
@@ -2977,11 +3124,11 @@ protected:
 
      str.clear();
 
-     // eat leading whitespace/deliminators -- this sould be more efficient than
+     // eat leading whitespace/delimiter -- this should be more efficient than
      // calling removeSpacesFront since we only need to erase in the front of the string once. 
      while ( (i < n) && ( is_in_symbol_list__( (*this)[i], ws)) ) ++i;
 
-     if (i == n)   // nothing left so re remove alle spaces and the string will be empty
+     if (i == n)   // nothing left so re remove all spaces and the string will be empty
      {
        erase();
      }
@@ -3038,20 +3185,26 @@ protected:
 
 
  // Could be made more efficient.
- // A deliminator could be given as parameter.
- void get_vector_of_values(std::vector<double> &v)
+ // A delimiter could be given as parameter.
+ int get_vector_of_values(std::vector<double> &v)
  {
    int i, n;
+   int bad_values=0;
    v.clear();
    
    std::vector<faststring> vs;
    split(vs, *this);
    n = vs.size();
+
    for(i=0; i<n; ++i)
    {
-     v.push_back(vs[i].ToDouble());
+     if (vs[i].isADouble() )
+       v.push_back(vs[i].ToDouble());
+     else
+       ++bad_values;
    }
- } 
+   return bad_values;
+ }
 
  // Funktioniert noch nicht richtig:
 /*  void search_replace_first(faststring s1, faststring s2, unsigned pos=0) */
@@ -3151,7 +3304,7 @@ inline std::istream &getline(std::istream &is, faststring &str)
   return is;
 }
 
-/* Can be optimized ?? */
+/* Can be optimised ?? */
 /* Function is declared inline since it is a global function in a header file. It is not declared */
 /* static in order not to get compiler warnings due to unused functions. */
 //
@@ -3232,7 +3385,7 @@ inline void appendFileToList(std::ifstream &is, std::list<faststring> &l)
 // Note on efficiency:
 // vector<faststring> can be inefficient as a container in the split functions.
 // Expanding the vector leads not only to a relocation of the memory but also to
-// the construction of copies and descruction of all existing elements.
+// the construction of copies and destruction of all existing elements.
 // For many splitting events, a list should be favoured.
 
 
@@ -3272,7 +3425,7 @@ split_at (Container &l, const faststring &s, const faststring &delim)
 
   while (pos2 != faststring::npos)
   {
-    pos2 = s.find(delim, pos2); // Start of next deliminator
+    pos2 = s.find(delim, pos2); // Start of next delimiter
 
     if (pos2 >= s.size() )
       break;
@@ -3348,7 +3501,7 @@ split_respect (Container &l, const faststring &s, char const * const ws)
     return l.size();
 }
 
-// Multiple successive deliminators result in multiple hits.
+// Multiple successive delimiter result in multiple hits.
 template <typename Container>
 int
 split_strict (Container &l, const faststring &s, char const * const ws)

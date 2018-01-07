@@ -1,4 +1,4 @@
-/*  BaitFisher (version 1.2.7) a program for designing DNA target enrichment baits
+/*  BaitFisher (version 1.2.8) a program for designing DNA target enrichment baits
  *  Copyright 2013-2016 by Christoph Mayer
  *
  *  This source file is part of the BaitFisher-package.
@@ -259,7 +259,7 @@ class Csequence_loci_cluster_collection
   std::vector<bool>                                 valid_sequences; // Does the sequence with given index have Ns or gaps in this range?
                                                                      // Indices are the indices in the CSequences2 object.
 
-  char**                                             msa;            // Pointer to a recoded copy of the data
+  char**                                            msa;             // Pointer to a recoded copy of the data
                                                                      // pos_start and pos_end are the coordinates
                                                                      // in these sequences.
 

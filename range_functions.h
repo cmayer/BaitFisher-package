@@ -1,5 +1,6 @@
-/*  BaitFisher (version 1.2.7) a program for designing DNA target enrichment baits
- *  Copyright 2013-2016 by Christoph Mayer
+/*  BaitFisher (version 1.2.8) a program for designing DNA target enrichment baits
+ *  BaitFilter (version 1.0.6) a program for selecting optimal bait regions
+ *  Copyright 2013-2017 by Christoph Mayer
  *
  *  This source file is part of the BaitFisher-package.
  * 
@@ -51,7 +52,7 @@
 //  - ranges can be 0 or 1 based. Be careful!!!!
 //  - the preferred way to represent a vanishing range is (0,0).
 // TODO: See comments in functions for which this convention does not apply.
-// TODO: Several funcions work independent of a convention here.
+// TODO: Several functions work independent of a convention here.
 //
 
 
@@ -395,7 +396,7 @@ class CRangeList
   std::list<Crange> rl;
   bool              sorted;
   unsigned          lower_bound;
-  unsigned          upper_bound; // Accoring to the convetion this position comes after the last position in this list of ranges.
+  unsigned          upper_bound; // According to the convention this position comes after the last position in this list of ranges.
   unsigned          count; // Introduced since the empty() function could be
                            // via size()==0, whereas size could be O(n)
                            // which might be very inefficient.
@@ -500,6 +501,7 @@ class CRangeList
     return rl.end();
   } 
 
+  // Test before using this function
   void create_reset_rl_array()
   {
     if (rl_array)
@@ -512,7 +514,7 @@ class CRangeList
     }
   }
 
-
+  // Test before using this function
   void fill_rl_array()
   {
     if (rl_array == NULL)
@@ -588,7 +590,7 @@ class CRangeList
 
   bool add(faststring str)
   {
-    size_t pos1=0, pos2, len=str.size();
+    faststring::size_t pos1=0, pos2, len=str.size();
     unsigned c1,c2;
 
     while (pos1 < len && str[pos1] != ';')
@@ -663,12 +665,93 @@ class CRangeList
   }
 
 
+  bool add_delta(faststring str)
+  {
+    faststring::size_t pos1=0, pos2, len=str.size();
+    unsigned c1,c2;
+
+    while (pos1 < len && str[pos1] != ';')
+    {
+      str.skip_symbol(pos1,' ');
+
+      errno = 0;
+      c1 = str.ToUnsigned(pos1, pos2);
+      //      std::cerr << "c1 " << c1 << std::endl;
+      if (errno != 0)
+      {
+	return false;
+      }
+      str.skip_symbol(pos2,' ');
+
+      if (str[pos2] == ',' || str[pos2] == ';') // One number range.
+      {
+	add(c1,c1+1);
+      }
+      else if (str[pos2] == '-') // Two number range
+      {
+	pos1 = pos2+1;  // Be careful '-' is read as minus
+	str.skip_symbol(pos1,' ');
+	//	std::cerr << "pos1 " << pos1 << std::endl;
+	errno = 0;
+	c2 = str.ToUnsigned(pos1, pos2);
+	//	std::cerr << "c2 " << c2 << std::endl;
+	if (errno != 0)
+	{
+	  return false;
+	}
+	//	std::cerr << "pos2 " << pos2 << std::endl;
+	str.skip_symbol(pos2,' ');
+	if (str[pos2] == '\\')
+	{
+	  ++pos2;
+	  str.skip_symbol(pos2,' ');
+
+	  char d = str[pos2];
+	  unsigned tmp = c1;
+	  unsigned delta = d-'0';
+	  if (errno != 0)
+	  {
+	    return false;
+	  }
+	  ++pos2;
+	  str.skip_symbol(pos2,' ');
+	  
+	  while (tmp < c2)
+	  {
+	    add(tmp, tmp+1);
+	    tmp += delta;
+	  }
+	}
+	else
+	{
+	  add(c1, c2+1);
+	}
+      }
+      else
+      {
+	return false;
+      }
+      pos1 = pos2;
+      
+      if (str[pos1] == ',') // we are not done yet - the list continues
+      {
+	++pos1;
+	str.skip_symbol(pos1,' ');
+	if (str[pos1] == ';')
+
+	  return false;
+      }
+    }
+    return true;
+  }
+
+
   unsigned size() const
   {
     return count;
   }
 
-  // Assignment operator: Use standard assigment operator. No pointer content needs to be copied
+  // Assignment operator: Use standard assignment operator. No pointer content needs to be copied
   //                      This is still true since rl_array is not ready to use yet.
   //                      Currently there is no need/no plan to implement it.
          
@@ -717,7 +800,7 @@ class CRangeList
   }
 
 
-  // Find an island of overlaping ranges, starting at it_beg.
+  // Find an island of overlapping ranges, starting at it_beg.
   // The initial value of it_end (the second parameter) is overwritten,
   // and is therefore irrelevant.
   // When leaving this function, it_end points to the range behind the island.
@@ -861,7 +944,7 @@ class CRangeList
 
   unsigned coverage_raw()
   {
-    unsigned count=0;
+    unsigned lencount=0;
 
     CRangeList_iterator_const it, it_end;
 
@@ -870,10 +953,10 @@ class CRangeList
 
     while (it != it_end)
     {
-      count += it->len();
+      lencount += it->len();
       ++it;
     }
-    return count;
+    return lencount;
   }
 
   // Side effect: *this will be sorted

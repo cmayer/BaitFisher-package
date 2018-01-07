@@ -1,5 +1,6 @@
-/*  BaitFisher (version 1.2.7) a program for designing DNA target enrichment baits
- *  Copyright 2013-2016 by Christoph Mayer
+/*  BaitFisher (version 1.2.8) a program for designing DNA target enrichment baits
+ *  BaitFilter (version 1.0.6) a program for selecting optimal bait regions
+ *  Copyright 2013-2017 by Christoph Mayer
  *
  *  This source file is part of the BaitFisher-package.
  * 
@@ -107,11 +108,27 @@ size_t vec_mean_sd(const std::vector<T> &vec,
   return n;
 }
 
+// Coordinates conventions:
+//  The first coordinate is the index of the first element in the range as 0 based index.
+//  The second coordinate is the index of the last element in the range as 0 based index.
 template<typename T>
 void median_range(std::vector<T> &vec, size_t f, size_t l, double &median, size_t &index, bool &is_datum)
 {
-  size_t s = f+l;
-  size_t m = s/2;
+  size_t s = f+l; // This is not the length or size of the range. It is the sum of the indices.
+  size_t m = s/2; // This is the index of the mid of the range
+
+  // In order to see that the following code is correct one should look at the following examples:
+  // vec: 0,1,2, Range: 0 to 2, which is the full vector. => s=2, m=1 which is the correct mid of the range. s is even so index=m=1, median is vec[m]=vec[1]. 
+  // vec: 0,1,2,3 Range:  1 to 3, => s=4, m=2, median = vec[2], index = 2
+  // vec: 0,1,2,3 Range:  3 to 3, => s=6, m=3, median = vec[3], index = 3
+  // vec: 0,1,2,3 Range:  0 to 3, => s=3, m=1, s is odd so median = (vec[1]+vec[2])/2, index = 1
+  // vec: 0,1,2,4,4 Range 1 to 4, => s=5, m=2, s is odd so median = (vec[2]+vec[3])/2, index = 2
+  // vec: 0,1,2,4,4 Range 2 to 4, => s=6, m=3, median = vec[3], index = 3
+  // vec: 0,1,2,4,4 Range 1 to 3, => s=4, m=2, median = vec[2], index = 2
+
+  // The following code simply relies on the fact that:
+  // (i)  m is obviously the middle of the range, or left of the middle if the number of elements is even.
+  // (ii) s is even if the range has an odd number of elements and vice versa.
 
   if (s%2 == 0)
   {
@@ -131,7 +148,8 @@ void median_range(std::vector<T> &vec, size_t f, size_t l, double &median, size_
 
 // Prerequisite: Type T must be a type for which it makes sense to multiply it with a double to obtain a double.
 // Compute quartiles:
-// First quartile, second quartile=median, and third quartile
+// second quartile=median
+// Q1 and Q3 are medians of the first part and second part, where the first and second part are obtained by dividing the data at the median.
 template<typename T>
 size_t vec_median_quartile_sort_method2(std::vector<T> &vec, double &Q1, double &Q2, double &Q3)
 {
@@ -215,8 +233,8 @@ void vec_mark_outlier_mehod2(std::vector<T> &vec, std::vector<bool> &outlier)
 // Method 3 routines:
 
 // Prerequisite: Type T must be a type for which it makes sense to multiply it with a double to obtain a double.
-// Compute quartiles:
-// First quartile, second quartile=median, and third quartile
+// Compute quartiles: Averages of values at certain indices.
+// 
 template<typename T>
 size_t vec_median_quartile_sort_method3(std::vector<T> &vec, double &Q1, double &Q2, double &Q3)
 {

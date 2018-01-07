@@ -1,5 +1,6 @@
-/*  BaitFisher (version 1.2.7) a program for designing DNA target enrichment baits
- *  Copyright 2013-2016 by Christoph Mayer
+/*  BaitFisher (version 1.2.8) a program for designing DNA target enrichment baits
+ *  BaitFilter (version 1.0.6) a program for selecting optimal bait regions
+ *  Copyright 2013-2017 by Christoph Mayer
  *
  *  This source file is part of the BaitFisher-package.
  * 
@@ -29,18 +30,45 @@
 
 /* Todo:  count DNA bases, guess data type, is AA, etc.  */
 
+// Changes 10/11.11.2016:
+// * Removed a bug: (c == 'O' && c == 'U') should read (c == 'O' || c == 'U').
+// The impact of this error is low. Basically, we overlook O or U as not allowed amino acids.
+// Since they should not occur in normal amino acid sequences, it does not make much of a difference.
+// * added the blosum symbols, lists and functions
+// * added some upper lists and functions.
+// * added a look-up table for the blosum symbols. This is much more efficient.
+// * removed z from aa_symbols, aa_symbols_ext and _upper, since it as an ambiguity character.
+
+
 #include <cstring>
 #include <cctype>
 
-static const char DNARNA_symbols[]   = "aAcCgGtTuU";
-/////////static const faststring aa_symbols     = "aArRnNdDbBcCeEqQzZgGhHiIlLkKmMfFpPsStTwWyYvVxX";
-static const char aa_symbols[]       = "aArRnNdDcCeEqQzZgGhHiIlLkKmMfFpPsStTwWyYvVxX";
+static const char DNARNA_symbols[]         = "aAcCgGtTuU";
+static const char DNARNA_symbols_upper[]   = "ACGTU";
+static const char aa_symbols[]             = "aArRnNdDcCeEqQgGhHiIlLkKmMfFpPsStTwWyYvVxX";
+static const char aa_symbols_upper[]       = "ARNDCEQGHILKMFPSTWYVX";
 
-static const char aa_symbols_ext[]       = "aArRnNdDcCeEqQzZgGhHiIlLkKmMfFpPsStTwWyYvVxXUuOo*";
+// Extended also includes: O and U:
+static const char aa_symbols_ext[]         = "aArRnNdDcCeEqQgGhHiIlLkKmMfFpPsStTwWyYvVxXuUoO*";
+static const char aa_symbols_ext_upper []  = "ARNDCEQGHILKMFPSTWYVXUO*";
 
 static const char non_aa_in_ABC [] = "BJOUZbjouz";
 
-static const char DNARNA_iupac_symbols [] = "aAcCgGtTuURYSWryswKMBDkmbdHVNhvn";
+// AA ambiguity characters: J is a very rare ambiguity character also included in this set.
+// J is not allowed in many programs.
+static const char aa_ambig [] = "bBzZjJxX";
+
+// Usually a safe list of allowed characters are those in the blosum matrix:
+// Lists the symbols that are allowed in the blosum matrix: Contains B,Z but not J as ambiguity character.
+// See also the look up tables:  is_aa_blosum_code[] and is_aa_blosum_code_or_gap[]
+
+static const char aa_symbols_blosum[]         = "aArRnNdDcCeEqQzZgGhHiIlLkKmMfFpPsStTwWyYvVbBxX*";
+static const char aa_symbols_blosum_upper []  = "ARNDCEQZGHILKMFPSTWYVBX*";
+
+static const char non_aa_symbols_blosum[]         = "jJoOuU";
+static const char non_aa_symbols_blosum_upper []  = "JOU";
+
+static const char DNARNA_iupac_symbols []          = "aAcCgGtTuURYSWryswKMBDkmbdHVNhvn";
 static const char phylip_DNARNA_allowed_symbols [] = "?-nNaAcCgGtTuURYSWryswKMBDkmbdHVhvoOxX";
 
 static const char phylip_neither_aa_dna_symbol [] = "jJzZ";
@@ -50,31 +78,147 @@ static const char allowed_non_ABC [] = "-?*";
 // Chars that are not an aa symbol: B, J, O, U, Z
 // X is the amibuity code
 
+// Includes the symbols which occur in the blosum matrices: 
+const int is_aa_blosum_code_lookup[] = {
+  0,0,0,0,0,0,0,0,0,0, //  0- 9
+  0,0,0,0,0,0,0,0,0,0, // 10-19
+  0,0,0,0,0,0,0,0,0,0, // 20-29
+  0,0,0,0,0,0,0,0,0,0, // 30-39
+  0,0,1,0,0,0,0,0,0,0, // 40-49  45: - is not included, 42: * included 
+  0,0,0,0,0,0,0,0,0,0, // 50-59
+  0,0,0,0,0,1,1,1,1,1, // 60-69  63: ? is not included
+  1,1,1,1,0,1,1,1,1,0, // 70-79
+  1,1,1,1,1,0,1,1,1,1, // 80-89
+  1,0,0,0,0,0,0,1,1,1, // 90-99
+  1,1,1,1,1,1,0,1,1,1, //100-109
+  1,0,1,1,1,1,1,0,1,1, //110-119
+  1,1,1,0,0,0,0,0 //120-127
+};
 
-inline bool is_DNA_base_upper(char c)
-{ 
-  if (c == 'A' || c == 'C' || c == 'G' || c == 'T' )
-    return true;
-  return false;
-}
+// Includes the symbols which occur in the blosum matrices and the gap character:
+const int is_aa_blosum_code_or_gap_lookup[] = {
+  0,0,0,0,0,0,0,0,0,0, //  0- 9
+  0,0,0,0,0,0,0,0,0,0, // 10-19
+  0,0,0,0,0,0,0,0,0,0, // 20-29
+  0,0,0,0,0,0,0,0,0,0, // 30-39
+  0,0,1,0,0,1,0,0,0,0, // 40-49  45: - is included, 42: * included 
+  0,0,0,0,0,0,0,0,0,0, // 50-59
+  0,0,0,0,0,1,1,1,1,1, // 60-69  63: ? is not included
+  1,1,1,1,0,1,1,1,1,0, // 70-79
+  1,1,1,1,1,0,1,1,1,1, // 80-89
+  1,0,0,0,0,0,0,1,1,1, // 90-99
+  1,1,1,1,1,1,0,1,1,1, //100-109
+  1,0,1,1,1,1,1,0,1,1, //110-119
+  1,1,1,0,0,0,0,0 //120-127
+};
 
-inline bool is_DNA_base_lower(char c)
-{ 
-  if (c == 'a' || c == 'c' || c == 'g' || c == 't' )
-    return true;
-  return false;
-}
+// Inlcudes all DNA symbols, no ambiguity characters
+const char is_DNA_lookup[128] = {
+  0,0,0,0,0,0,0,0,0,0, //  0- 9
+  0,0,0,0,0,0,0,0,0,0, // 10-19
+  0,0,0,0,0,0,0,0,0,0, // 20-29
+  0,0,0,0,0,0,0,0,0,0, // 30-39
+  0,0,0,0,0,0,0,0,0,0, // 40-49
+  0,0,0,0,0,0,0,0,0,0, // 50-59
+  0,0,0,0,0,1,0,1,0,0, // 60-69     63:'?', 65:'A' to  69:'E'
+  0,1,0,0,0,0,0,0,0,0, // 70-79
+  0,0,0,0,1,0,0,0,0,0, // 80-89
+  0,0,0,0,0,0,0,1,0,1, // 90-99
+  0,0,0,1,0,0,0,0,0,0, //100-109
+  0,0,0,0,0,0,1,0,0,0, //110-119
+  0,0,0,0,0,0,0,0      //120-127
+};
 
+// Inlcudes all DNA symbols and gap '-', no ambiguity characters
+const char is_DNA_or_GAP_lookup[128] = {
+  0,0,0,0,0,0,0,0,0,0, //  0- 9
+  0,0,0,0,0,0,0,0,0,0, // 10-19
+  0,0,0,0,0,0,0,0,0,0, // 20-29
+  0,0,0,0,0,0,0,0,0,0, // 30-39
+  0,0,0,0,0,1,0,0,0,0, // 40-49
+  0,0,0,0,0,0,0,0,0,0, // 50-59
+  0,0,0,0,0,1,0,1,0,0, // 60-69     63:'?', 65:'A' to  69:'E'
+  0,1,0,0,0,0,0,0,0,0, // 70-79
+  0,0,0,0,1,0,0,0,0,0, // 80-89
+  0,0,0,0,0,0,0,1,0,1, // 90-99
+  0,0,0,1,0,0,0,0,0,0, //100-109
+  0,0,0,0,0,0,1,0,0,0, //110-119
+  0,0,0,0,0,0,0,0      //120-127
+};
+
+// Inlcudes all ambiguity characters as well as ?
+const char is_DNA_or_AMBIG_lookup[128] = {
+  0,0,0,0,0,0,0,0,0,0, //  0- 9
+  0,0,0,0,0,0,0,0,0,0, // 10-19
+  0,0,0,0,0,0,0,0,0,0, // 20-29
+  0,0,0,0,0,0,0,0,0,0, // 30-39
+  0,0,0,0,0,0,0,0,0,0, // 40-49
+  0,0,0,0,0,0,0,0,0,0, // 50-59
+  0,0,0,1,0,1,1,1,1,0, // 60-69     63:'?', 65:'A' to  69:'E'
+  0,1,1,0,0,1,0,1,1,0, // 70-79
+  0,0,1,1,1,0,1,1,0,1, // 80-89
+  0,0,0,0,0,0,0,1,1,1, // 90-99
+  1,0,0,1,1,0,0,0,0,0, //100-109
+  0,0,0,0,1,0,1,0,1,1, //110-119
+  0,1,0,0,0,0,0,0      //120-127
+};
+
+// Inlcudes all ambiguity characters as well as ? and -
+const char is_DNA_or_AMBIG_or_GAP_lookup[128] = {
+  0,0,0,0,0,0,0,0,0,0, //  0- 9
+  0,0,0,0,0,0,0,0,0,0, // 10-19
+  0,0,0,0,0,0,0,0,0,0, // 20-29
+  0,0,0,0,0,0,0,0,0,0, // 30-39
+  0,0,0,0,0,1,0,0,0,0, // 40-49     45: - is included
+  0,0,0,0,0,0,0,0,0,0, // 50-59
+  0,0,0,1,0,1,1,1,1,0, // 60-69     63:'?', 65:'A' to  69:'E'
+  0,1,1,0,0,1,0,1,1,0, // 70-79
+  0,0,1,1,1,0,1,1,0,1, // 80-89
+  0,0,0,0,0,0,0,1,1,1, // 90-99
+  1,0,0,1,1,0,0,0,0,0, //100-109
+  0,0,0,0,1,0,1,0,1,1, //110-119
+  0,1,0,0,0,0,0,0      //120-127
+};
+
+
+/* inline bool is_DNA_base_upper(char c) */
+/* {  */
+/*   if (c == 'A' || c == 'C' || c == 'G' || c == 'T' ) */
+/*     return true; */
+/*   return false; */
+/* } */
+
+/* inline bool is_DNA_base_lower(char c) */
+/* {  */
+/*   if (c == 'a' || c == 'c' || c == 'g' || c == 't' ) */
+/*     return true; */
+/*   return false; */
+/* } */
+
+// Only defined if c <= 127
 inline bool is_DNA_base(char c)
 {
-  if (c == 'A' || c == 'C' || c == 'G' || c == 'T' || c == 'a' || c == 'c' || c == 'g' || c == 't' )
-    return true;
-  return false;
+  return is_DNA_lookup[(int)c];
+}
+
+inline bool is_DNA_base_or_GAP(char c)
+{
+  return is_DNA_or_GAP_lookup[(int)c];
+}
+
+inline bool is_DNA_or_DNA_ambig(char c)
+{
+  return is_DNA_or_AMBIG_lookup[(int)c];
+}
+
+inline bool is_DNA_or_DNA_ambig_or_GAP(char c)
+{
+  return is_DNA_or_AMBIG_or_GAP_lookup[(int)c];
 }
 
 inline bool is_DNA_or_RNA_base(char c)
 {
-  if (c == 'A' || c == 'C' || c == 'G' || c == 'T' || 
+  if (c == 'A' || c == 'C' || c == 'G' || c == 'T' ||
       c == 'a' || c == 'c' || c == 'g' || c == 't' || c == 'U' || c == 'u')
     return true;
   return false;
@@ -90,8 +234,11 @@ inline bool is_allowed_non_ABC(char c)
 
 inline bool is_phylip_aa_dna_symbol(char c) // Does not include -? or similar
 {
+  // Only one character is not allowed:
+  if (c=='o' || c == 'O')
+    return false;
   if (c >='a' && c <= 'z')
-  {  
+  {
       return true;
   }
   else if (c >='A' && c <= 'Z')
@@ -101,33 +248,53 @@ inline bool is_phylip_aa_dna_symbol(char c) // Does not include -? or similar
   return false;
 }
 
-
-inline bool is_DNA_iupac_ambig(char c)
+inline bool is_gap(char c)
 {
-  if (c == 'N'  ||  c == '?'  || c == 'n' ||
-      c == 'R'  ||  c == 'Y'  || c == 'S' || c == 'W' ||
-      c == 'r'  ||  c == 'y'  || c == 's' || c == 'w' ||
-      c == 'K'  ||  c == 'M'  || c == 'B' || c == 'D' ||
-      c == 'k'  ||  c == 'm'  || c == 'b' || c == 'd' ||
-      c == 'H'  ||  c == 'V'  ||
-      c == 'h'  ||  c == 'v')
-    return true;
-  else
-    return false;
+  return c == '-';
 }
 
-inline bool is_DNA_iupac_ambig_upper(char c)
+
+// Only defined if c <= 127
+// Includes only DNA ambig symbols. Does not include DNA symbols. See also is_DNA_or_AMBIG below.
+inline bool is_DNA_ambig(char c)
 {
-  if (c == 'N'  ||  c == '?'  ||
-      c == 'R'  ||  c == 'Y'  || c == 'S' || c == 'W' ||
-      c == 'K'  ||  c == 'M'  || c == 'B' || c == 'D' ||
-      c == 'H'  ||  c == 'V')
-    return true;
-  else
-    return false;
+  return is_DNA_or_AMBIG_lookup[(int)c] && !is_DNA_lookup[(int)c];
+/*   if (c == 'N'  ||  c == '?'  || c == 'n' || */
+/*       c == 'R'  ||  c == 'Y'  || c == 'S' || c == 'W' || */
+/*       c == 'r'  ||  c == 'y'  || c == 's' || c == 'w' || */
+/*       c == 'K'  ||  c == 'M'  || c == 'B' || c == 'D' || */
+/*       c == 'k'  ||  c == 'm'  || c == 'b' || c == 'd' || */
+/*       c == 'H'  ||  c == 'V'  || */
+/*       c == 'h'  ||  c == 'v') */
+/*     return true; */
+/*   else */
+/*     return false; */
 }
 
-inline int is_aa_ambig(char c)
+/* inline bool is_DNA_iupac_ambig_upper(char c) */
+/* { */
+/*   if (c == 'N'  ||  c == '?'  || */
+/*       c == 'R'  ||  c == 'Y'  || c == 'S' || c == 'W' || */
+/*       c == 'K'  ||  c == 'M'  || c == 'B' || c == 'D' || */
+/*       c == 'H'  ||  c == 'V') */
+/*     return true; */
+/*   else */
+/*     return false; */
+/* } */
+
+
+
+
+
+
+
+
+
+
+// A list can be found here: https://en.wikipedia.org/wiki/Amino_acid
+// The acceptance of J as an ambiguous amino acid symbol is low.
+// J does not occur in the blosm matrix and is not allowed in some programs.
+inline bool is_aa_ambig(char c)
 {
   if (c == 'b' || c == 'B' || c == '?' || c == 'x' || c == 'X' || 
       c == 'j' || c == 'J' || c == 'z' || c == 'Z')
@@ -136,18 +303,47 @@ inline int is_aa_ambig(char c)
     return false;
 }
 
+inline bool is_aa_blosum_code(unsigned char c)
+{
+  return (is_aa_blosum_code_lookup[c] != 0);
+}
+
+inline bool is_aa_blosum_code_or_gap(unsigned char c)
+{
+  return (is_aa_blosum_code_or_gap_lookup[c] != 0);
+}
+
+
+
+inline int is_aa_upper(char c)
+{
+  if (c >='A' && c <= 'Z')
+  {
+    // AA ambigs:
+    if (c == 'B' || c == 'X' || c == 'J' || c == 'Z')
+      return false;
+
+    // The few symbols that represent nothing.
+    // Indeed they are listed as the 21st and 22nd amino acid in https://en.wikipedia.org/wiki/Amino_acid
+    // But they are usually not handled by programs, so we return false.
+    if (c == 'O' || c == 'U') // OU
+      return false;
+    return true;
+  }
+  return false;
+}
 
 
 inline int is_aa_or_aa_ambig(char c) // includes '?' and  B, Z, J, X
 {
   if (c >='a' && c <= 'z')
   {
-    if (c != 'o' && c != 'u') // ou
+    if (c != 'o' && c != 'u') // Only not allowed characters in a..z are: ou
       return true;
   }
   else if (c >='A' && c <= 'Z')
   {
-    if (c != 'O' && c != 'U') // OU
+    if (c != 'O' && c != 'U') // Only not allowed characters in a..z are: OU
       return true;
   }
 
@@ -286,7 +482,7 @@ inline void content_in_region_DNA(const char *beg, const char *end, unsigned &AT
       ++AT;
     else if (c == '-')
       ++gap;
-    else if (is_DNA_iupac_ambig(c) )
+    else if (is_DNA_ambig(c) )
       ++ambig;
     else
       ++unknown;
@@ -295,6 +491,21 @@ inline void content_in_region_DNA(const char *beg, const char *end, unsigned &AT
   }
 }
 
+inline bool is_aa_blosum_code_or_gap_sequence(const char *p1, const char *p2, unsigned *offending_pos)
+{
+  const char *startp = p1;
+
+  while (p1 != p2)
+  {
+    if (!is_aa_blosum_code_or_gap(*p1) )
+    {
+      *offending_pos = p1 - startp;
+      return false;
+    }
+    ++p1;
+  }
+  return true;
+}
 
 
 

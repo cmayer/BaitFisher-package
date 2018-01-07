@@ -1,4 +1,4 @@
-/*  BaitFisher (version 1.2.7) a program for designing DNA target enrichment baits
+/*  BaitFisher (version 1.2.8) a program for designing DNA target enrichment baits
  *  Copyright 2013-2016 by Christoph Mayer
  *
  *  This source file is part of the BaitFisher-package.
@@ -53,7 +53,7 @@
 
 
 #define PROGNAME  "BaitFisher"
-#define VERSION   "1.2.7"
+#define VERSION   "1.2.8"
 
 
 using namespace std;
@@ -63,15 +63,15 @@ using namespace std;
 // Verbosity rules:
 //      verbosity 0 -> only error messages that lead to exit() (goes to cerr)
 //      verbosity 1 -> warnings, ALERT (goes to cerr)
-//      verboisty 2 -> more warinings, e.g. skipping features
+//      verbosity 2 -> more warnings, e.g. skipping features
 //      verbosity 3 -> progress (goes to cout)
 //      verbosity 4 -> more progress (goes to cout)
-//      verbosity 6 -> per alignment/feautre success NOTES
+//      verbosity 6 -> per alignment/feature success NOTES
 //      verbosity 8 -> per coordinate success NOTES
 //      verbosity >=20: DEGUB
 // Default: 5
 
-unsigned global_VERBOSITY = 0; // Will be initialized in parse_parameter_file. This value will never be used.
+unsigned global_VERBOSITY = 0; // Will be initialised in parse_parameter_file. This value will never be used.
 
 
 
@@ -518,13 +518,13 @@ void print_parameters(ostream         & os,
   os << "Bait offset (for multiple baits in region):   " << bait_offset           << endl;
   os << "Bait number (for multiple baits in region):   " << bait_number           << endl;
   os << "Output directory:                             " << output_directory      << endl;
-  os << "Remove refernce species from alignment:       " << (remove_reference_species_from_alignments ? "yes": "no") << endl;
+  os << "Remove reference species from alignment:      " << (remove_reference_species_from_alignments ? "yes": "no") << endl;
   if (sequence_name_tokenizer_overwritten)
   {
-    os << "sequence_name_field_delimiter (default \"|\") " << "Not used since no required taxa specified and no aligment cutting." << endl;
+    os << "sequence_name_field_delimiter (default \"|\") " << "Not used since no required taxa specified and no alignment cutting." << endl;
     // The field numbers are stored 0-based. In the user interaction, numbers are 1-based.
-    os << "Number of taxon field in sequence name:       " << "Not used since no required taxa specified and no aligment cutting." << endl;
-    os << "Number of geneID field in sequence name:      " << "Not used since no required taxa specified and no aligment cutting." << endl;
+    os << "Number of taxon field in sequence name:       " << "Not used since no required taxa specified and no alignment cutting." << endl;
+    os << "Number of geneID field in sequence name:      " << "Not used since no required taxa specified and no alignment cutting." << endl;
   }
   else
   {
@@ -599,6 +599,7 @@ inline void respective_sequence_positions(CScoreMatrix &DNAmat, faststring &s1, 
 
   if (verbosity > 50)
   {
+    al.reverse();
     std::cout << al << std::endl;
     std::cout << "Score: " << alignment_score << std::endl;
     std::cout << "Internal representation of start: "; a.print(std::cout); std::cout << std::endl;
@@ -735,7 +736,7 @@ bool check_full_coverage_and_required_taxa_in_range(CSequences2 *seqs, unsigned 
     if (global_VERBOSITY >= VERBOSITY_COORDINATES)
     {
       cout << "NOTE: Not a good bait window. No complete sequences in this range: " << pos1+1 << "-" << pos2
-	   << " Num seqs: " << set_of_taxon_ids.size() << endl;
+	   << " Num sequences: " << set_of_taxon_ids.size() << endl;
     }
     return false;
   }
@@ -744,7 +745,7 @@ bool check_full_coverage_and_required_taxa_in_range(CSequences2 *seqs, unsigned 
   {
     if (global_VERBOSITY >= VERBOSITY_COORDINATES)
     {
-      cout << "NOTE: Good bait window. Valid sequence range (no required taxa specified): " << pos1+1 << "-" << pos2 << " Num seqs: " << set_of_taxon_ids.size() << endl;
+      cout << "NOTE: Good bait window. Valid sequence range (no required taxa specified): " << pos1+1 << "-" << pos2 << " Num sequences: " << set_of_taxon_ids.size() << endl;
     }
     return true;
   }
@@ -754,7 +755,7 @@ bool check_full_coverage_and_required_taxa_in_range(CSequences2 *seqs, unsigned 
   {
     if (global_VERBOSITY >= VERBOSITY_COORDINATES)
     {
-      cout << "NOTE: Good bait window. All required taxonomic groups present in this range: " << pos1+1 << "-" << pos2  << " Num seqs: " << set_of_taxon_ids.size() << endl;
+      cout << "NOTE: Good bait window. All required taxonomic groups present in this range: " << pos1+1 << "-" << pos2  << " Num sequences: " << set_of_taxon_ids.size() << endl;
     }
     return true;
   }
@@ -762,7 +763,7 @@ bool check_full_coverage_and_required_taxa_in_range(CSequences2 *seqs, unsigned 
   {
     if (global_VERBOSITY >= VERBOSITY_COORDINATES)
     {
-      cout << "NOTE: Not a good bait windows. NOT all required taxonomic groups present in this range." << pos1+1 << "-" << pos2  << " Num seqs: " << set_of_taxon_ids.size() << endl;
+      cout << "NOTE: Not a good bait windows. NOT all required taxonomic groups present in this range." << pos1+1 << "-" << pos2  << " Num sequences: " << set_of_taxon_ids.size() << endl;
     }
     return false;
   }
@@ -789,7 +790,7 @@ bool handle_this_alignment(CSequences2           *alignment,
   unsigned alignment_length = alignment->GetPosNum();
   int      region_length    = (number_of_baits_in_region-1)*bait_offset+bait_length;
 
-  vector<unsigned>      seqNum_to_unique_taxonID_this_alignment; // Used to translate the sequnce number in the current file to the unique taxon number.
+  vector<unsigned>      seqNum_to_unique_taxonID_this_alignment; // Used to translate the sequence number in the current file to the unique taxon number.
   vector<faststring>    full_names_this_alignment;
   vector<faststring>    taxon_names_this_alignment;
   set<faststring>       taxon_set_this_alignment;
@@ -827,7 +828,7 @@ bool handle_this_alignment(CSequences2           *alignment,
   //       Last valid/possible index for is_valid_bait_window: alignment_length - bait_length
   //       Last valid/possible index for is_valid_bait_region: alignment_length - region_length
 
-  // Initialize is_valid_bait_window with fail character '-':
+  // Initialise is_valid_bait_window with fail character '-':
   is_valid_bait_window.clear();
   is_valid_bait_window.assign(alignment_length, '-');
 
@@ -920,7 +921,7 @@ bool handle_this_alignment(CSequences2           *alignment,
 	{
 	  // Allowed values for  is_valid_bait_window[pos] are 'c' and 'x'. Not allowed are: '-' and 'e'
 	  // Some checks are redundant here: E.g. pos >= alignment_length and is_valid_bait_window[pos]=='e'
-	  // should not be possilbe, since we check is_valid_bait_region[i] != 'e' before we get here.
+	  // should not be possible, since we check is_valid_bait_region[i] != 'e' before we get here.
 	  // Doing these checks is more secure.
 	  // TODO: In future versions check whether pos >= alignment_length and is_valid_bait_window[pos]=='e'
 	  //       are necessary.
@@ -940,7 +941,7 @@ bool handle_this_alignment(CSequences2           *alignment,
 
 	  //	  cout << "Interm. " << i << is_valid_bait_region << endl;
 	  
-	  // For all good bait regions we also allocate memory for the final colletion of the data:
+	  // For all good bait regions we also allocate memory for the final collection of the data:
 	  bait_region_info[i] = new CBait_region_information(name, running_number, running_number_maximum, i, // bait_length, bait_offset,
 							     number_of_baits_in_region);
 	  //		    cout << "Intermediate is_valid_bait_region: " << endl << is_valid_bait_region << endl;
@@ -976,7 +977,7 @@ bool handle_this_alignment(CSequences2           *alignment,
   // If we come here we have the following information:
   //	      is_valid_bait_window contains a 'c' in all bait window starting indices that need to be looked at.
   //              is_valid_bait_region contains a 'x' in all bait region starting indices that we will explore,
-  //                                    i.e. for which we have the necesarry successive bait windows.
+  //                                    i.e. for which we have the necessary successive bait windows.
 
   // If this file has one or more regions that should be looked at:
   // Cluster loci which need to be clustered.
@@ -996,7 +997,7 @@ bool handle_this_alignment(CSequences2           *alignment,
 
     // We need a recoded msa in order to compute artificial center sequences.
     // We could do this for each window, but since the windows overlap, we
-    // do a lot of redudant work. Doing this per window we would only be on the positive
+    // do a lot of redundant work. Doing this per window we would only be on the positive
     // side if there would be only very few windows in a long alignment.
     // I do not see this as the general case.
     // The recoded msa is used for the complete file and only needs to be created once.
@@ -1090,7 +1091,7 @@ bool handle_this_alignment(CSequences2           *alignment,
     {
       if (is_valid_bait_region[i] == 'x')
       {
-	// Collect the informaiton for all number_of_baits_in_region baits in this bait region.
+	// Collect the information for all number_of_baits_in_region baits in this bait region.
 	for (j=0; j < number_of_baits_in_region; ++j)
 	{
 	  if (cluster_loci_this_alignment[i+j*bait_offset] != NULL)
@@ -1124,7 +1125,7 @@ bool handle_this_alignment(CSequences2           *alignment,
 
 
     // The msa array is not needed any more, so we delete it.
-    // The acutual sequences are stored in the msa_faststring
+    // The actual sequences are stored in the msa_faststring
     // vector and they will be deleted automatically when this block will be left.
     delete [] msa;
     ++DEBUG_COUNT_DELETE_CALLS_MSA;
@@ -1159,7 +1160,7 @@ bool handle_this_alignment(CSequences2           *alignment,
 
 } // END handle_this_alignment()
 
-// Only used in special mode to test gff file integrety:
+// Only used in special mode to test gff file integrity:
 void gff_file_test(faststring gff_file_name)
 {
   GFF_collection gff_col;
@@ -1455,7 +1456,7 @@ int main(int argc, char **argv)
 
     if (good_lines == 0 || bad_lines > 0 || file_error)
     {
-      cerr << "A problem occured while reading the first gff file." << endl;
+      cerr << "A problem occurred while reading the first gff file." << endl;
       cerr << "Good lines: " << good_lines << endl;
       cerr << "Bad lines:  " << bad_lines  << endl;
       cerr << "File error: " << file_error << endl;
@@ -1511,7 +1512,7 @@ int main(int argc, char **argv)
       cout << "PROGRESS: " << t << " Genome file has been read." << endl << flush; 
     }
 
-    // Read fasta sequnces one by one:
+    // Read fasta sequences one by one:
     list<faststring>::iterator it, it_end;
     it     = fasta_names.begin();
     it_end = fasta_names.end();
@@ -1547,7 +1548,7 @@ int main(int argc, char **argv)
     // to the list of taxon names. Furthermore, this object will keep a map that maps taxon names
     // to a unique taxon index in this analysis. Internally it is important to have such a unique index.
 
-    // The unique taxon indeces are used:
+    // The unique taxon indices are used:
     // -  when checking for all required taxa.
     //    The required taxa are stored as sets of unique taxon ids.
     //    To check that there is at least one representative for each required set,
@@ -1595,7 +1596,7 @@ int main(int argc, char **argv)
 	{
 	  faststring t;
 	  get_time_string(t);
-	  cout << "PROGRESS: " << t << " Reading alignemnt file ("
+	  cout << "PROGRESS: " << t << " Reading alignment file ("
 	       << count_transcripts << "/" << Num_transcripts << "): "
 	       << full_alignment_file_name << endl << flush; 
 	}
@@ -1680,7 +1681,7 @@ int main(int argc, char **argv)
 	  gl_it_end = gene_record_list.end();
 
 	  // NOTE: We count all genes, not only the once that have a sufficient length.
-	  // TODO: Check that we really want to count all genes, not only the once that are long enought.
+	  // TODO: Check that we really want to count all genes, not only the once that are long enough.
 
 	  features_this_gene = gene_record_list.size();
 
@@ -1695,11 +1696,11 @@ int main(int argc, char **argv)
 	    ++count_transcripts_no_gff_entries_for_feature;
 	  }
 
-	  // For the gene in the transcript file we are working on we found exi
+	  // For the gene in the transcript file we are working on we found exons
 	  // in the gff file. I.e. the gene is annotated in the genome.
-	  // The genomic sequences of the exi will be extracted and aligned
+	  // The genomic sequences of the exons will be extracted and aligned
 	  // to the sequence in the transcript file. This determines the coordinates
-	  // of the exi in the transcript file.
+	  // of the exons in the transcript file.
 
 	  CDnaString     feature_sequence;
 	  CDnaString     transcript_sequence;
@@ -1713,14 +1714,14 @@ int main(int argc, char **argv)
 	  transcript_sequence = transcript_seq->getSeqStr();
 
 	  // The transcript sequence can contain gaps. These cause problems when aligning features against the transcripts.
-	  // Removing gaps is not an option, since we need to preserver the original coordiantes.
+	  // Removing gaps is not an option, since we need to preserver the original coordinates.
 	  // Converting gaps to Ns will preserve coordinates. It will do no harm, since Ns will nicely align to the features and the sequence will
 	  // not be used for anything except aligning features to it.
 
 	  transcript_sequence.replace_char('-','N');
 
 	  /*
-	    vector<unsigned>      seqNum_to_unique_taxonID_this_feature; // Used to translate the sequnce number in the current file to the unique taxon number.
+	    vector<unsigned>      seqNum_to_unique_taxonID_this_feature; // Used to translate the sequence number in the current file to the unique taxon number.
 	    vector<faststring>    full_names_this_feature;
 	    vector<faststring>    taxon_names_this_feature;
 	    set<faststring>       taxon_set_this_feature;
@@ -1853,7 +1854,7 @@ int main(int argc, char **argv)
 	      if ( (int)feature_sequence.size() > feature_in_transcript_length)
 	      {
 		if (global_VERBOSITY >= VERBOSITY_WARNINGS)
-		  cerr << " ALERT: Length of excised genomic feature is longer than the transcipt, i.e. it looks as if the transcipt is incomplete.\n"
+		  cerr << " ALERT: Length of excised genomic feature is longer than the transcript, i.e. it looks as if the transcript is incomplete.\n"
 		          " This can happen. Gene name:      " << gene_name
 		       << " Feature number: "                  << feature_number   
 		       << " Lengths are:    "                  << feature_in_transcript_length << "/" << feature_sequence.size()
@@ -1901,7 +1902,7 @@ int main(int argc, char **argv)
 		else
 		{
 		  ///////////////
-		  // Exporting transcript alignment before removing lines containig gaps and Ns.
+		  // Exporting transcript alignment before removing lines containing gaps and Ns.
 		  ///////////////
 		  if (true) // if export is requested
 		  {
@@ -2023,7 +2024,7 @@ int main(int argc, char **argv)
 
   else // No alignment cutting
   {
-    // Read fasta sequnces one by one:
+    // Read fasta sequences one by one:
     list<faststring>::iterator it, it_end;
     it     = fasta_names.begin();
     it_end = fasta_names.end();
@@ -2185,7 +2186,7 @@ int main(int argc, char **argv)
 //
 // In the loop over all features we reserve memory for the
 // - "feature_transcript_alignment"
-//   This memory is released at the the end of the block that handles features that are sufficienlty long
+//   This memory is released at the the end of the block that handles features that are sufficiently long
 //   for designing baits.
 //
 //

@@ -1,4 +1,4 @@
-/*  BaitFisher (version 1.2.7) a program for designing DNA target enrichment baits
+/*  BaitFisher (version 1.2.8) a program for designing DNA target enrichment baits
  *  Copyright 2013-2016 by Christoph Mayer
  *
  *  This source file is part of the BaitFisher-package.
@@ -59,7 +59,7 @@ void Csequence_loci_cluster_collection::cluster_locus(faststring & region_name, 
 	cout << "WARNING: Found 0 valid sequences in bait window in Csequence_loci_cluster_collection::cluster_locus()." << endl;
 	cout << "         Alignment file:          " << filename    << endl;
 	cout << "         Region/gene name:        " << region_name << endl;
-	cout << "         Within gene coordiantes: " << pos_start+1 << "-" << pos_end << endl;
+	cout << "         Within gene coordinates: " << pos_start+1 << "-" << pos_end << endl;
       }
     }
     if (number_of_valid_sequences == 1)
@@ -70,7 +70,7 @@ void Csequence_loci_cluster_collection::cluster_locus(faststring & region_name, 
 	cout << "Note: Found 1 valid sequence in bait window in Csequence_loci_cluster_collection::cluster_locus(). Clustering will be skipped. Bait will be constructed from single sequence." << endl;
 	cout << "      Alignment file:          " << filename    << endl;
 	cout << "      Region/gene name:        " << region_name << endl;
-	cout << "      Within gene coordiantes: " << pos_start+1 << "-" << pos_end << endl;
+	cout << "      Within gene coordinates: " << pos_start+1 << "-" << pos_end << endl;
       }
 
       // TODO: Uncomment and adapt:
@@ -112,7 +112,7 @@ void Csequence_loci_cluster_collection::cluster_locus(faststring & region_name, 
   // Create cluster object:
   CDistance_Cluster cluster_object;
 
-  // We initialize the global pointer to the cluster_object.
+  // We initialise the global pointer to the cluster_object.
   // This pointer is used by the global call_back_distance function,
   // which we pass to the CSequences2 class where it is used to
   // fill the cluster_object with the distances of the sequences.
@@ -125,7 +125,7 @@ void Csequence_loci_cluster_collection::cluster_locus(faststring & region_name, 
   // of the new sequence number, and we have global unique numbers, sequence numbers in the exon,
   // sequence numbers in the window.
   // The best compromise is to add very large distances to the clustering algorithm and to remove
-  // the "non-present" sequences after the clusting has been done.
+  // the "non-present" sequences after the clustering has been done.
   // Due to the large distances we assign to all sequence pairs in which one sequence is not valid, non of
   // the invalid sequences will be clustered with any other sequence.
 
@@ -512,7 +512,7 @@ void find_center_sequence_exhaustive(char **msa, char *consensus,
   } // END else of if (pos1 == pos2)
 } // END void find_center_sequence_exhaustive
 
-// distances must be initialized by caller.
+// distances must be initialised by caller.
 void find_center_sequence_heuristic(char **msa,     char *consensus,
 				    char *center,  char *isAmbig,
 				    unsigned len_center,
@@ -532,7 +532,7 @@ void find_center_sequence_heuristic(char **msa,     char *consensus,
   // pos_start walks through isAmbig and consensus.
   // pos_start_msa walks through the msa. 
 
-  // The following static variables are initialized only when calling this function for the first time.
+  // The following static variables are initialised only when calling this function for the first time.
   static unsigned max_num_taxa = 20;
   static unsigned *dist_A = new unsigned [max_num_taxa];
   static unsigned *dist_C = new unsigned [max_num_taxa];
@@ -653,7 +653,7 @@ void find_center_sequence_heuristic(char **msa,     char *consensus,
 
   while (pos_start < pos_end)
   {
-    if (isAmbig[pos_start]) // He now search for best nulceotide in center.
+    if (isAmbig[pos_start]) // He now search for best nucleotide in center.
     {
       // Try 'A'
       if (consensus[pos_start]&recode_A)
@@ -974,7 +974,7 @@ void Csequence_cluster_and_center_sequence::compute_center(char center_computati
   }
   else // We have to compute a center sequence:
   {
-    if (center_computation_mode == 0) // exhausitve
+    if (center_computation_mode == 0) // exhaustive
     {
       find_center_sequence_for_msa_exhaustive(msa, center_sequence, num_sequences, pos_start, pos_end, max_dist_bait_to_msa);
     }
@@ -1010,8 +1010,8 @@ void Csequence_cluster_and_center_sequence::compute_center(char center_computati
       find_center_sequence_for_msa_heuristic(msa, c2, num_sequences, pos_start, pos_end, md2);
       t3 = time(NULL);
     
-      // This assignment must come before backrecoding c1.
-      // Otherwise we backrecode twice, which is not correct.
+      // This assignment must come before back recoding c1.
+      // Otherwise we back recode twice, which is not correct.
       center_sequence = c1;
 
       back_recode_range(c1.begin(), c1.end());
@@ -1036,7 +1036,7 @@ void Csequence_cluster_and_center_sequence::compute_center(char center_computati
       {
 	cout << "Same distance." << endl;
       }
-    } // END  else // Comparisson mode
+    } // END  else // Comparison mode
   } // END  else // We have to compute a center sequence:
 
   //  cout << "LOG: pos: " << pos_start << " mis " << max_dist_bait_to_msa*120 << endl;

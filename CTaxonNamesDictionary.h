@@ -1,4 +1,4 @@
-/*  BaitFisher (version 1.2.7) a program for designing DNA target enrichment baits
+/*  BaitFisher (version 1.2.8) a program for designing DNA target enrichment baits
  *  Copyright 2013-2016 by Christoph Mayer
  *
  *  This source file is part of the BaitFisher-package.
@@ -42,7 +42,7 @@ class CTaxonNamesDictionary
   CSeqNameList *snl;
   CSeqNameList all;
 
-  // Each index storen in the taxon_names_to_index map is equal to the index of the same taxon name in the taxon_names_vec.
+  // Each index stored in the taxon_names_to_index map is equal to the index of the same taxon name in the taxon_names_vec.
   // This allows us to translate indices and names back and forth.
 
   std::vector<faststring>        taxon_names_vec;
@@ -93,7 +93,7 @@ class CTaxonNamesDictionary
 
     if (error_get_set_of_name_field)
     {
-      std::cerr << "WARNING: At least one error occured when trying to read taxon names from the fasta sequence headers."
+      std::cerr << "WARNING: At least one error occurred when trying to read taxon names from the fasta sequence headers."
 		<< " Usually this error occurs, when headers are not in the proper format, when the parameter file contains a wrong"
 		<< " wrong sequence name field delimiter or if the taxon name field number is wrong." << std::endl;
       std::cerr << "This error will influence: TODO." << std::endl;

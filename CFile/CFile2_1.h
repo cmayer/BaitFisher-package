@@ -1,4 +1,4 @@
-/*  BaitFisher (version 1.2.7) a program for designing DNA target enrichment baits
+/*  BaitFisher (version 1.2.8) a program for designing DNA target enrichment baits
  *  Copyright 2013-2016 by Christoph Mayer
  *
  *  This source file is part of the BaitFisher-package.
@@ -39,11 +39,11 @@
 
 
 // Changes:
-// 22.08.2009: Added getline function for faststring. Disadvantage: addidtional dependence on faststring.h
+// 22.08.2009: Added getline function for faststring. Disadvantage: additional dependence on faststring.h
 // 07.01.2011: Changed Version to CFile2_1.h
 // 07.01.2011: Now uses the faststring2.h
 
-// Idee: ios::   set Buffer size
+// Idea: ios::   set Buffer size
 
 // TODO: Old mac format not supported.
 //       This requires to allow two successive calls to the internal ungetchar command.
@@ -119,7 +119,8 @@ class CFile : private std::ifstream
 
  public:
 
-  enum {__eof_flag = 1, __good_flag = 2,  __fail_flag = 4, __bad_flag = 8};
+  enum {__eof_flag = 1, __good_flag = 2,  __fail_flag = 4, __bad_flag = 8, __fail_reason1 = 16, __fail_reason2 = 32, __fail_reason3 = 64,
+	__fail_reason4 = 128};
 
   void open(const char *name)
   {
@@ -163,7 +164,7 @@ class CFile : private std::ifstream
     ffclose();
   }
 
-  bool exists()  // -- depricated -- do not use this any more - check fail() instead !!!!!!!!
+  bool exists()  // -- deprecated -- do not use this any more - check fail() instead !!!!!!!!
   {
     return !fail(); 
   }
@@ -191,6 +192,26 @@ class CFile : private std::ifstream
   char status()
   {
     return __status;
+  }
+
+  bool fail_reason1()
+  {
+    return (__status & __fail_reason1);
+  }
+
+  bool fail_reason2()
+  {
+    return (__status & __fail_reason2);
+  }
+
+  bool fail_reason3()
+  {
+    return (__status & __fail_reason3);
+  }
+
+  bool fail_reason4()
+  {
+    return (__status & __fail_reason4);
   }
 
   void rewind()

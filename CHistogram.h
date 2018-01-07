@@ -1,5 +1,6 @@
-/*  BaitFisher (version 1.2.7) a program for designing DNA target enrichment baits
- *  Copyright 2013-2016 by Christoph Mayer
+/*  BaitFisher (version 1.2.8) a program for designing DNA target enrichment baits
+ *  BaitFilter (version 1.0.6) a program for selecting optimal bait regions
+ *  Copyright 2013-2017 by Christoph Mayer
  *
  *  This source file is part of the BaitFisher-package.
  * 
@@ -201,6 +202,8 @@ class CHistogram
    {
      range_mean_sd(it_beg, it_end, me, sd);
      bins = 3.5*sd/pow(num_range_elements, 1./3.);
+     if (bins < 1)
+       bins = 1;
    }
    else if (bins_param == -2) // sqrt formula
    {
@@ -310,6 +313,11 @@ CHistogram(double a_param, double b_param, int bins_param):
  // if bins_param > 1: this specifies the actual number of bins
 
  CHistogram(const std::vector<double> &vals, int bins_param=0):entries(0)
+ {
+   init_with_range(vals.begin(), vals.end(), vals.size(), bins_param);
+ }
+
+ CHistogram(const std::vector<float> &vals, int bins_param=0):entries(0)
  {
    init_with_range(vals.begin(), vals.end(), vals.size(), bins_param);
  }

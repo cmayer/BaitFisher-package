@@ -1,5 +1,6 @@
-/*  BaitFisher (version 1.2.7) a program for designing DNA target enrichment baits
- *  Copyright 2013-2016 by Christoph Mayer
+/*  BaitFisher (version 1.2.8) a program for designing DNA target enrichment baits
+ *  BaitFilter (version 1.0.6) a program for selecting optimal bait regions
+ *  Copyright 2013-2017 by Christoph Mayer
  *
  *  This source file is part of the BaitFisher-package.
  * 
@@ -37,7 +38,7 @@
 #include "CSequence_Mol2_1.h"
 #include <iterator>
 #include <algorithm>
-
+#include <climits>
 
 inline void set_to_short_name(faststring &str)
 {
@@ -69,7 +70,7 @@ class CSeqNameList
 
  private:
   faststring infile_name;
-  bool       only_names;  // Formerly, all vectors had been initialized to ensure that all fields are accessible.
+  bool       only_names;  // Formerly, all vectors had been initialised to ensure that all fields are accessible.
                           // This is not the case any more. If only_names is true, the vectors defined below can be empty.
                           // TODO: Check that this is handled consistently.
 
@@ -80,8 +81,7 @@ class CSeqNameList
   std::vector<unsigned>            corrected_len_vec;
   std::vector<unsigned>            repeat_density_bp_mbp;
 
- public:
-  void add(const faststring &full_name, unsigned sl, double CG_c, unsigned cl, unsigned rdens)
+  void add_unchecked(const faststring &full_name, unsigned sl, double CG_c, unsigned cl, unsigned rdens)
   {
     // The basic add routine creates a copy of the sequence name that shall be added.
     faststring *tmp = new faststring(full_name);
@@ -92,14 +92,14 @@ class CSeqNameList
     corrected_len_vec.push_back(cl);
     repeat_density_bp_mbp.push_back(rdens);
 
-    //    std::cerr << "Adding new seq: Name " << *tmp << " len " << sl << " CG " << CG_c << " cl " << cl<< std::endl; 
-
     faststring::size_t pos = full_names.size()-1;
+
+    //    std::cerr << "Adding new seq: Name " << *tmp << " pos " << pos << " len " << sl << " CG " << CG_c << " cl " << cl<< std::endl; 
 
     m[tmp] = pos;
   }
 
-  void add_only_name(const char *full_name)
+  void add_only_name_unchecked(const char *full_name)
   {
     faststring *tmp = new faststring(full_name);
     full_names.push_back(tmp);
@@ -108,21 +108,52 @@ class CSeqNameList
     m[tmp] = pos;
   }
 
-  void add(const CSeqNameList &snl, unsigned id)
+ public:
+
+  bool add_only_name_non_redundant(const char *full_name)
   {
-    if (snl.only_names)
-      add_only_name( snl.full_names[id]->c_str() );
-    else
-      add(*(snl.full_names[id]), snl.seq_len_vec[id], snl.CG_content[id], snl.corrected_len_vec[id], snl.repeat_density_bp_mbp[id]);
+    if (get_id_short_name(*full_name) == UINT_MAX )
+      {
+	add_only_name_unchecked( full_name );
+	return true;
+      }
+      else
+      {
+	std::cerr << "Detected previous entry of " << full_name << std::endl;
+	return false;
+      }
   }
+
+/*   void add(const CSeqNameList &snl, unsigned id) */
+/*   { */
+/*     if (snl.only_names) */
+/*       add_only_name( snl.full_names[id]->c_str() ); */
+/*     else */
+/*       add(*(snl.full_names[id]), snl.seq_len_vec[id], snl.CG_content[id], snl.corrected_len_vec[id], snl.repeat_density_bp_mbp[id]); */
+/*   } */
+
+  bool add_non_redundant(const faststring &full_name, unsigned sl, double CG_c, unsigned cl, unsigned rdens)
+  {
+    if (get_id_short_name(full_name) == UINT_MAX)
+    {
+      add_unchecked(full_name, sl, CG_c, cl, rdens);
+      return true;
+    }
+    else
+    {
+      std::cerr << "Detected previous entry of " << full_name << ". Name has not been added again." << std::endl;
+      return false;
+    }
+  }
+
 
   bool add_non_redundant(const CSeqNameList &snl, unsigned id)
   {
     if (!snl.only_names)
     {
-      if (get_id_short_name(*(snl.full_names[id])) == -1u)
+      if (get_id_short_name(*(snl.full_names[id])) == UINT_MAX)
       {
-	add(*(snl.full_names[id]), snl.seq_len_vec[id], snl.CG_content[id], snl.corrected_len_vec[id], snl.repeat_density_bp_mbp[id]);
+	add_unchecked(*(snl.full_names[id]), snl.seq_len_vec[id], snl.CG_content[id], snl.corrected_len_vec[id], snl.repeat_density_bp_mbp[id]);
 	return true;
       }
       else
@@ -133,9 +164,9 @@ class CSeqNameList
     }
     else // only_names
     {
-      if (get_id_short_name(*(snl.full_names[id])) == -1u)
+      if (get_id_short_name(*(snl.full_names[id])) == UINT_MAX)
       {
-	add_only_name( snl.full_names[id]->c_str() );
+	add_only_name_unchecked( snl.full_names[id]->c_str() );
 	return true;
       }
       else
@@ -143,8 +174,7 @@ class CSeqNameList
 	std::cerr << "Detected previous entry of " << *snl.full_names[id] << std::endl;
 	return false;
       }
-    }
-    
+    }    
   }
 
 
@@ -255,16 +285,17 @@ class CSeqNameList
 	if ( infile.fail() && !infile.eof() )
 	{
 	  std::cerr << "\n\n";
-	  std::cerr << "Warning: A problem was detected while reading the input file \""<< fasta_file_name << "\". The file might be empty or it might not be a valid fasta file.\n";
+	  std::cerr << "ERROR: A problem was detected while reading the input file \""<< fasta_file_name << "\". The file might be empty or it might not be a valid fasta file.\n";
 	  std::cerr << "File position: line ";
 	  std::cerr << faststring(infile.line()) << std::endl;
 	  std::cerr << std::flush;
+	  exit(-7);
 	}
 	else
 	{
 	  faststring name_to_add = seq.getFullName();
 	  
-	  //	 std::cerr << "Procesing sequence: " << name_to_add << std::endl;
+	  //	  	 std::cerr << "Processing sequence: " << name_to_add << std::endl;
 	  
 	  seq.compute_numbers_of_residues();
 	  
@@ -273,9 +304,15 @@ class CSeqNameList
 	  double   CGc         = seq.get_CG_content();
 	  unsigned rdens       = 0;
 	 
-	  //	 std::cerr << "Adding 2: " << name_to_add << " slen: " << seq.length() << " CG: " << CGc << " bases: " << bases <<  std::endl;
+	  //	  std::cerr << "Adding 2: " << name_to_add << " slen: " << seq.length() << " CG: " << CGc << " bases: " << bases <<  std::endl;
 	  
-	  add(name_to_add, seq.length(), CGc, bases, rdens);
+	  bool non_redundant = add_non_redundant(name_to_add, seq.length(), CGc, bases, rdens);
+
+	  if (!non_redundant)
+	  {
+	    std::cerr << "Exiting due to non unique sequence names." << std::endl;
+	    exit(-1);
+	  }
 	}
       } // End while
     }
@@ -287,17 +324,24 @@ class CSeqNameList
 	if ( infile.fail() && !infile.eof() )
 	{
 	  std::cerr << "\n\n";
-	  std::cerr << "Warning: A problem was detected while reading the input file \""<< fasta_file_name << "\". The file might be empty or it might not be a valid fasta file.\n";
+	  std::cerr << "ERROR: A problem was detected while reading the input file \""<< fasta_file_name << "\". The file might be empty or it might not be a valid fasta file.\n";
 	  std::cerr << "File position: line ";
 	  std::cerr << faststring(infile.line()) << std::endl;
 	  std::cerr << std::flush;
-	  break; // Stop reading this file. 
+	  exit(-7);
+	  //	  break; // Stop reading this file. 
 	}
 	else
 	{
 	  const char * name_to_add = seq.getFullName();
-	  //	 std::cerr << "Procesing sequence: " << name_to_add << std::endl;
-	  add_only_name(name_to_add);
+	  //	 std::cerr << "Processing sequence: " << name_to_add << std::endl;
+	   bool non_redundant = add_only_name_non_redundant(name_to_add);
+
+	  if (!non_redundant)
+	  {
+	    std::cerr << "Exiting due to non unique sequence names." << std::endl;
+	    exit(-1);
+	  }
         }
       } // End while
     } // End else only_names
@@ -327,8 +371,15 @@ class CSeqNameList
     infile.getline(name_to_add);
     while (!infile.eof())
     {
-      //	 std::cerr << "Procesing sequence: " << name_to_add << std::endl;
-      add_only_name(name_to_add.c_str());
+      //	 std::cerr << "Processing sequence: " << name_to_add << std::endl;
+      bool non_redundant = add_only_name_non_redundant(name_to_add.c_str());
+
+      if (!non_redundant)
+      {
+	std::cerr << "Exiting due to non unique sequence names." << std::endl;
+	exit(-1);
+      }
+
       infile.getline(name_to_add);
     } // End while
 
@@ -356,7 +407,7 @@ class CSeqNameList
 
     if (only_names)
     {
-      std::cerr << "Internal error: Reading repeat denstities for names only sequence list.\n";
+      std::cerr << "Internal error: Reading repeat densities for names only sequence list.\n";
       exit(-22);
     }
 
@@ -367,7 +418,7 @@ class CSeqNameList
       split(vf, line, "\t");
       if (vf.size()!=2)
       {
-	std::cerr << "Critical error when addind repeat densities. Line " << line << " not a valid input.\n";
+	std::cerr << "Critical error when adding repeat densities. Line " << line << " not a valid input.\n";
 	exit(-21);
       }
       sn    = vf[0];
@@ -624,13 +675,13 @@ class CSeqNameList
     if (it_find != m.end())
       return it_find->second;
     else
-      return -1u;
+      return UINT_MAX;
   }
 
 
   // Search for str_in in the list of sequences. str_in can be the full name or the short name.
   // The target list can contain full or short names.
-  unsigned get_id_short_name(faststring str) // No refernce since we change the string
+  unsigned get_id_short_name(faststring str) // No reference since we change the string
   {
     // We shorten str to the short name.
     // If it is the full name and the target only contains
@@ -641,10 +692,10 @@ class CSeqNameList
     it_find = m.lower_bound(&str);  // it_find points to an element that is either equal to str or the first element
                                     // in the map that is greater than str. In case, str contains the short name of the
                                     // target, we are looking for this element.
-                                    // The question whether the short name is unique is not adressed here. The id of the 
+                                    // The question whether the short name is unique is not addressed here. The id of the 
                                     // first suitable short name is returned.
     if (it_find == m.end())
-      return -1u;
+      return UINT_MAX;
 
     //    if (*(it_find->first) == str)      // str is equal to the string that has been found. 
 	    //     return it_find->second;
@@ -659,16 +710,16 @@ class CSeqNameList
     // The short names differ or the complete string is the short name. Since the short name should have been found above,
     // we have not found the string.
     if (pos1 != pos2) 
-      return -1u;                
+      return UINT_MAX;                
     
     // If str is longer than the target, it cannot be the short name.
-    // If the space is found at a position with index larger thant the size of str, it cannot be the short name of str.
+    // If the space is found at a position with index larger than the size of str, it cannot be the short name of str.
     // It could be that this case is not possible.
     //     if (str.size() > it_find->first->size() || pos > str.size() )
-    //        return -1u;
+    //        return UINT_MAX;
 
     if (strncmp(str.c_str(), it_find->first->c_str(), pos1) != 0)
-      return -1u;
+      return UINT_MAX;
     
     return  it_find->second;
   }
@@ -696,7 +747,7 @@ class CSeqNameList
       if (find_pos != faststring::npos) // we have a match
       {
 	id = it_beg->second;
-	add(a, id);
+	add_non_redundant(a, id);
       }
       ++it_beg;
     }
@@ -790,7 +841,7 @@ class CSeqNameList
     while (it_beg != it_end)
     {
       id = it_beg->second;
-      add(a, id);
+      add_non_redundant(a, id);
       ++it_beg;
     }
    
@@ -812,9 +863,9 @@ class CSeqNameList
     while (it_beg != it_end)
     {
       id = get_id_short_name(*(it_beg->first));    // Search for sequence in this.
-      if (id == -1u)                               // Sequence is unknown in this, so we add it
+      if (id == UINT_MAX)                               // Sequence is unknown in this, so we add it
       {
-	add(b, it_beg->second);
+	add_non_redundant(b, it_beg->second);
       }
       ++it_beg;
     }  
@@ -879,7 +930,7 @@ class CSeqNameList
     while (it_beg != it_end)
     {
       id = a.get_id_short_name(*it_beg);
-      add(a, id);
+      add_non_redundant(a, id);
 
       ++it_beg;
     }
@@ -937,7 +988,7 @@ class CSeqNameList
     while (it_beg != it_end)
     {
       id = a.get_id_short_name(*it_beg);
-      add(a, id);
+      add_non_redundant(a, id);
 
       ++it_beg;
     }
@@ -994,12 +1045,12 @@ class CSeqNameList
     {
       // The seq can be found either in a or in b.
       id = a.get_id_short_name(*it_beg);
-      if (id != -1u)
-	add(a, id);
+      if (id != UINT_MAX)
+	add_non_redundant(a, id);
       else
       {
 	id = b.get_id_short_name(*it_beg);
-	add(b, id);
+	add_non_redundant(b, id);
       }
 
       ++it_beg;
@@ -1027,16 +1078,16 @@ class CSeqNameList
     {
       id = a.get_id_short_name(*(it_beg->first));
       
-      if (id != -1u)
+      if (id != UINT_MAX)
       {
-	c.add(a, id);
+	c.add_non_redundant(a, id);
       }
       else
       {
 	id = b.get_id_short_name(*(it_beg->first));
-	if (id != -1u)
+	if (id != UINT_MAX)
 	{
-	  d.add(b, id);
+	  d.add_non_redundant(b, id);
 	}
 	else
 	{
@@ -1047,7 +1098,7 @@ class CSeqNameList
     }
   }
 
-  // All sequence names are split according to delim. The field with 1-based number field is actracted and stored in the field_set.
+  // All sequence names are split according to delim. The field with 1-based number field is extracted and stored in the field_set.
   bool get_set_of_name_field(unsigned field, char delim, std::set<faststring> &field_set)
   {
     unsigned i, n=full_names.size();
@@ -1063,7 +1114,7 @@ class CSeqNameList
 	if (splitter.size() < field )
 	{
 	  std::cerr << "Warning: In get_set_of_name_field you tried to extract field # "
-		    << field << " after splitting " << full_names[i] << " with deliminator " << delim
+		    << field << " after splitting " << full_names[i] << " with delimiter " << delim
 		    << " but this field does not exist." << std::endl;
 	  error = true;
 	}

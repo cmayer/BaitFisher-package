@@ -1,5 +1,6 @@
-/*  BaitFisher (version 1.2.7) a program for designing DNA target enrichment baits
- *  Copyright 2013-2016 by Christoph Mayer
+/*  BaitFisher (version 1.2.8) a program for designing DNA target enrichment baits
+ *  BaitFilter (version 1.0.6) a program for selecting optimal bait regions
+ *  Copyright 2013-2017 by Christoph Mayer
  *
  *  This source file is part of the BaitFisher-package.
  * 
@@ -25,16 +26,22 @@
  *  
  */
 // Some parts of this header file could be made more efficient.
-// Much of the functionalilty relys on a sorted list of Blast hits.
+// Much of the functionality relies on a sorted list of Blast hits.
 // The question arises whether a list is the best data structure for such 
-// a purpose. It could be more efficient to use a data sturcture such as
+// a purpose. It could be more efficient to use a data structure such as
 // a set, which is sorted automatically and which should in principle be
 // more efficient.
 
+// GI number will not be supported by NCBI in the future! So far we have not removed the code.
+// This should be done soon.
 
 #ifndef CBLASTPARSER_H
 #define CBLASTPARSER_H
 
+// The following two defines allow us to use fopen() in "CSeqNameList.h"
+// without error message when using the Visual Studio 2015 compiler.
+#define _CRT_SECURE_NO_DEPRECATE
+#define _CRT_SECURE_NO_WARNINGS
 
 #include <iostream>
 #include "CFile/CFile2_1.h"
@@ -48,6 +55,7 @@
 #include "CHistogram.h"
 
 #include "typedefs.h"
+#include <climits>
 
 class CTaxonomy;
 class CBlastHit;
@@ -63,7 +71,6 @@ bool less_than_CBlastHit_pointer_target(const CBlastHit *a, const CBlastHit *b);
 
 
 signed char CB_is_gi_of_type(CTaxonomy *tax, unsigned gi, unsigned type);
-//signed char 
 
 struct struct_less_than_CBlastHit_pointer_query_quality
 {
@@ -184,7 +191,7 @@ class CBlastHit
     }
     else
     {
-      std::cerr << "Unrecognized line of input passed to CBlastHit constructor: " << line << std::endl;
+      std::cerr << "Unrecognised line of input passed to CBlastHit constructor: " << line << "\n";
     }
   }
 
@@ -313,7 +320,7 @@ class CBlastHit
     if (a.end_target != b.end_target)
       return a.end_target < b.end_target;
 
-    // They should be irrelvant since we would have multiple identical hits
+    // They should be irrelevant since we would have multiple identical hits
     // if we come here.
     if (a.length != b.length)
       return a.length < b.length;
@@ -324,8 +331,8 @@ class CBlastHit
 
   friend bool less_than_CBlastHit_query_quality(const CBlastHit &a, const CBlastHit &b)
   {
-    // First criterion: name of query sequence: accending (smaller is "better")
-    // Second criterion: e_value accending (smaller is better)
+    // First criterion: name of query sequence: ascending (smaller is "better")
+    // Second criterion: e_value ascending (smaller is better)
     // Third criterion: score descending (higher is better)
     // Fourth criterion: perfection descending (higher is better)
     // Fifth criterion: sequence positions
@@ -365,7 +372,7 @@ class CBlastHit
     if (a.end_target != b.end_target)
       return a.end_target < b.end_target;
 
-    // They should be irrelvant since we would have multiple identical hits
+    // They should be irrelevant since we would have multiple identical hits
     // if we come here.
     //    if (a.length != b.length)   // Including this line is a bug. This was a bug.
       return a.length < b.length;
@@ -402,7 +409,7 @@ class CBlastHit
     if (a.end_query != b.end_query)
       return a.end_query < b.end_query;
 
-    // They should be irrelvant since we would have multiple identical hits
+    // They should be irrelevant since we would have multiple identical hits
     // if we come here.
     if (a.length != b.length)
       return a.length < b.length;
@@ -450,7 +457,7 @@ class CBlastHit
     
     os << e_value << delim;
     os << score;
-    os << std::endl;
+    os << '\n';
   }
 
   void print(std::ostream &os,
@@ -508,7 +515,7 @@ class CBlastHit
     if (pscore)
       os << score;
 
-    os << std::endl;
+    os << '\n';
   }
 
   void print_essential_1(std::ostream &os, char delim = '\t') const
@@ -517,7 +524,7 @@ class CBlastHit
     os << "E: "   << e_value << delim;
     os << "len: " << length << delim;
     os << "%: "   << perfection << delim;
-    os << std::endl;
+    os << '\n';
   }
 
 
@@ -528,7 +535,13 @@ class CBlastHit
 class CBlast_parser
 {
   std::list<CBlastHit*> lbh;
-  std::map<faststring, CBlastHit*>  bh_map;
+  // Previous versions of this header file used a map in the declaration of bh_map.
+  // This map is/was only used in the get_max_hit_query_span__matching_beginning2 function.
+  // In a map in which elements are inserted with the insert function we only inserted the first (and best entry) for
+  // each query. This was fine for all cases for which we used this map so far.
+  // However, a multimap has the same functionality and is more secure, since it will store all entries.
+
+  std::multimap<faststring, CBlastHit*>  bh_map;
 
   // Stores coverage in bp. If query seq. length is known it can be used to determine the relative sequence length.
   std::map<faststring, unsigned> total_coverage_map; 
@@ -539,7 +552,8 @@ class CBlast_parser
   void add(CBlastHit* p)
   {
     lbh.push_back(p);
-    bh_map.insert(bh_map.end(), std::make_pair<faststring, CBlastHit*>(p->get_query_seq_name(), p));
+    faststring tmp = p->get_query_seq_name();
+    bh_map.insert(bh_map.end(), std::make_pair(tmp, p));
   }
 
  public:
@@ -552,7 +566,7 @@ class CBlast_parser
     f.ffopen(filename);
 
 #ifdef FINANA
-    std::cerr << "We are in the FINANA mode." << std::endl;
+    std::cerr << "We are in the FINANA mode.\n";
 #endif
 
     f.getline(line);
@@ -598,7 +612,7 @@ class CBlast_parser
   // See also keep_only_n_top_hits
   // Copy constructor that can be used to filter the n first blast hits for a query.
   // Will be sorted by query name, since the source will be sorted.
- CBlast_parser(CBlast_parser &b, unsigned n=-1u):query_name_quality_sorted(true)
+ CBlast_parser(CBlast_parser &b, unsigned n=UINT_MAX):query_name_quality_sorted(true)
   {
     b.sort_by_query_name_quality();
 
@@ -654,8 +668,8 @@ class CBlast_parser
       res = func(tax,target_gi, type);
       if (res < 0)
       {
-	std::cerr << "Warning: In CBlast_parser. res < 0.\n\n" << std::endl;
-	std::cerr << "GI number seems to be unknown: String: " << tmp << " unsigned: " << target_gi << std::endl;
+	std::cerr << "Warning: In CBlast_parser. res < 0.\n";
+	std::cerr << "GI number seems to be unknown: String: " << tmp << " unsigned: " << target_gi << '\n';
 	//	exit(0);
       }
       
@@ -689,7 +703,7 @@ class CBlast_parser
       res = func(tax,target_gi, query_strings);
       if (res < 0)
       {
-	std::cerr << "Error in CBlast_parser. res < 0.\n\n" << std::endl;
+	std::cerr << "Error in CBlast_parser. res < 0.\n\n";
 	exit(0);
       }
       
@@ -737,7 +751,7 @@ class CBlast_parser
 	  // Remove *it:
 	  delete *it;
 	  it = lbh.erase(it);
-	} // it noe points to the hit behind the hit that has been removed.
+	} // it now points to the hit behind the hit that has been removed.
 	  // it should not be incremented any more.
       }
       else
@@ -784,7 +798,7 @@ class CBlast_parser
 
     std::cerr << "WARNING: Number of blast hits removed since no taxid could be found for gi: "
 	      << count
-	      << std::endl; 
+	      << '\n'; 
   }
 
 
@@ -825,9 +839,9 @@ class CBlast_parser
 	  if (this_hit_e < best_e_value_this_query)
 	  {
 	    // Should never happen since this is sorted.
-	    std::cerr << "Error better evalue found: ";
+	    std::cerr << "Error better Evalue found: ";
 	    (*it)->print(std::cerr);
-	    std::cerr << std::endl;
+	    std::cerr << '\n';
 	  }
 	}
 	else  // A new query sequence
@@ -957,7 +971,7 @@ class CBlast_parser
     }
   }
 
-  // Calling this function is discurraged. We recommend to call:
+  // Calling this function is discouraged. We recommend to call:
   // sort_by_query_name_quality(), since this is more efficient
   // in the case of multiple calls.
   void sort_query()
@@ -1000,10 +1014,12 @@ class CBlast_parser
   {
     if ( orig.is_only_names() )
     {
-      std::cerr << "Object orig was created with the opion <only_names>." << std::endl;
-      std::cerr << "Do not know how to proceed." << std::endl;
+      std::cerr << "Object orig was created with the option <only_names>." << std::endl;
+      std::cerr << "I do not know how to proceed." << std::endl;
       exit(0);
     }
+
+
 
     if (min_query_prop_with_respect_to_all_hits_this_query)
       compute_coverage_map(min_perfection, max_evalue);
@@ -1048,6 +1064,8 @@ class CBlast_parser
 
       // Get name of query of blast hit:
       sname = tmp->get_query_seq_name();
+      
+      //      std::cerr << "Working on hit with sname " << sname << std::endl;
 
       if (sname != lastname) // We never want to add the same sequence twice.
 	                     // If it has been added (see below) we won't check hits with the same query name
@@ -1058,9 +1076,9 @@ class CBlast_parser
 	// Remember: blast tells us the short name only.
 	id_of_hit = orig.get_id_short_name(sname); 
  
-	//      std::cerr << "sname " << sname << " "  << id_of_hit << std::endl;
+	//	std::cerr << "sname " << sname << " id-of-hit "  << id_of_hit << std::endl;
 	
-	if (id_of_hit == -1u)
+	if (id_of_hit == UINT_MAX)
 	{
 	  std::cerr << "Error: Could not find sequence name: " 
 		    << tmp->get_query_seq_name()
@@ -1070,6 +1088,9 @@ class CBlast_parser
 	else // Sequence of blast hit has been found
 	{
 	  seq_len        = orig.get_seq_length(id_of_hit);
+
+	  //	  std::cerr << "sname " << sname << " "  << id_of_hit << " " << seq_len << std::endl;
+
 	  if (min_query_prop_with_respect_to_all_hits_this_query)
 	  {
 	    std::map<faststring, unsigned>::iterator it_find;
@@ -1092,7 +1113,11 @@ class CBlast_parser
 	  hit_evalue     = tmp->get_evalue();
 	  
 	  hit_coverage = (double)hit_len/seq_len;
-	  
+
+	  //	  
+	  //	  std::cerr << "seq-len hit_len coverage "<< sname << " " << seq_len << " " << hit_len  << " " << hit_coverage << std::endl;
+	  //
+
 	  if (hit_coverage >= min_query_prop && hit_perfection >= min_perfection && hit_evalue <= max_evalue)
 	  {
 	    // Query test OK!!
@@ -1115,8 +1140,8 @@ class CBlast_parser
 
 		if (accepted_hits_Log_file_name != NULL)
 		{
-		  fprintf(accepted_hits_log, "Accepted hit (qT and tT passed): %s hc: %.2lf perf: %.3lf e-val: %8lf Tn: %s\n",
-			  sname.c_str(), hit_coverage, hit_perfection, hit_evalue, target_full_name.c_str());
+		  fprintf(accepted_hits_log, "Accepted hit (qT and tT passed):\t%s\t%s\thc:\t%.2lf\tperf:\t%.3lf\te-val:\t%8lf\n",
+			  sname.c_str(), target_full_name.c_str(), hit_coverage, hit_perfection, hit_evalue);
 		}
 		result_with.add_non_redundant(orig,id_of_hit);
 		lastname = sname;  // In case we add the hit, we will ignore other blast hits with the same query name.
@@ -1127,8 +1152,8 @@ class CBlast_parser
 	      {
 		if (accepted_hits_Log_file_name != NULL)
 		{
-		  fprintf(accepted_hits_log, "Hit not accepted (qT OK but tT failed): %s hc: %.2lf perf: %.3lf e-val: %8lf Tn: %s\n",
-			  sname.c_str(), hit_coverage, hit_perfection, hit_evalue, target_full_name.c_str());
+		  fprintf(accepted_hits_log, "Hit not accepted (qT OK but tT failed): %s hc: %.2lf perf: %.3lf e-val: %8lf\n",
+			  sname.c_str(), hit_coverage, hit_perfection, hit_evalue);
 		}
 		
 		std::cerr << "--Hit not accepted (qery-test OK, target does not match). Target seq: " << target_full_name << " ";
@@ -1137,20 +1162,24 @@ class CBlast_parser
 	    }
 	    else // Do not check target seq full name - so we have an accepted hit
 	    {
+	      //	      unsigned  t_id;
+	      faststring target_short_name = tmp->get_target_seq_name();
+
 	      // This is an accepted hit:
 	      result_with.add_non_redundant(orig, id_of_hit);
 	      
 	      if (accepted_hits_Log_file_name != NULL)
 	      {
-		fprintf(accepted_hits_log, "Accepted hit (qT OK, no tT): %s hc: %.2lf perf: %.3lf e-val: %8lf\n",
-			sname.c_str(), hit_coverage, hit_perfection, hit_evalue);
+		fprintf(accepted_hits_log, "Accepted hit (qT OK, no tT):\t%s\t%s\thc:\t%.2lf\tperf:\t%.3lf\te-val:\t%8lf\n",
+//		fprintf(accepted_hits_log, "Accepted hit (qT OK, no tT):  %s      hc:  %.2lf perf:   %.3lf e-val:   %8lf\n",
+		sname.c_str(), target_short_name.c_str(), hit_coverage, hit_perfection, hit_evalue);
 	      }
 
 	      lastname = sname;  // In case we add the hit, we will ignore other blast hits with the same query name.
 	      //	  std::cerr << "Would add: " << id_of_hit << std::endl;
 	    }
 	  }
-	  else // Does not pass the query test. coverage, perfection, evalue
+	  else // Does not pass the query test. coverage, perfection, Evalue
 	  {
 	    if (accepted_hits_Log_file_name != NULL)
 	    {
@@ -1178,16 +1207,16 @@ class CBlast_parser
 
 
   // Typical application:
-  // For a given query, the best hit has an evalue of e-12,
-  // the second best hit has an evalue of e-10.
+  // For a given query, the best hit has an Evalue of e-12,
+  // the second best hit has an Evalue of e-10.
   // This indicates two independent good hits for the same query.
   // These hits shall be saved in the double_hits data structure.
 
   // Mode 0:
-  //     First  hit has fixed evalue threshold.
-  //     Second hit has a floating threshold depending on the the evalue of the first hit.
+  //     First  hit has fixed Evalue threshold.
+  //     Second hit has a floating threshold depending on the the Evalue of the first hit.
   // Mode 1:
-  //     First and second hits have fixed evalue thresholds.
+  //     First and second hits have fixed Evalue thresholds.
   //     This mode makes more sense. Example: First hit: E=10^-90
   //     Second hits needs e.g. 10^-87, while 10^-10  is already more than significant.
 
@@ -1210,7 +1239,7 @@ class CBlast_parser
     it_end = lbh.end();
 
     faststring last_hit_query = "";
-    double     best_e_value_this_query = 100; // Initialized to avoid a warning. The code below should always assign a value to it before it is used.
+    double     best_e_value_this_query = 100; // Initialised to avoid a warning. The code below should always assign a value to it before it is used.
                                               // This should be the case, since it is only used if (this_hit_query == last_hit_query) which should only be
                                               // the case if it has been assigned a value. 
     bool       still_increment_it;
@@ -1243,7 +1272,7 @@ class CBlast_parser
 	  if (this_hit_e < best_e_value_this_query)
 	  {
 	    // Should never happen since this list is sorted.
-	    std::cerr << "Error better evalue found: ";
+	    std::cerr << "Error better Evalue found: ";
 	    (*it)->print(std::cerr);
 	    std::cerr << std::endl;
 	    exit(-1);
@@ -1287,7 +1316,7 @@ class CBlast_parser
 	  if (this_hit_e < best_e_value_this_query)
 	  {
 	    // Should never happen since this list is sorted.
-	    std::cerr << "Error better evalue found: ";
+	    std::cerr << "Error better Evalue found: ";
 	    (*it)->print(std::cerr);
 	    std::cerr << std::endl;
 	    exit(-1);
@@ -1311,7 +1340,11 @@ class CBlast_parser
   }
 
 
+  // The reverse mode needs to be revised. CSeqNameList does not allow to add redundant elements since
+  // redundant entries are not handled in a save way at the moment.
 
+
+  /*
   void filter_CSeqNameList_with_major_reverse_blast_hit(CSeqNameList &orig, CSeqNameList &result_with,
 							double min_query_prop, double min_perfection, double max_evalue, bool multi=true)
   // The multi paramter determines whether multiple entries are made if the target sequence has multiple hits.
@@ -1363,7 +1396,7 @@ class CBlast_parser
  
 	//      std::cerr << "sname " << sname << " "  << id_of_hit << std::endl;
 	
-	if (id_of_hit == -1u)
+	if (id_of_hit == UINT_MAX)
 	{
 	  std::cerr << "Error: Could not find sequence name: " 
 		    << sname
@@ -1408,7 +1441,7 @@ class CBlast_parser
     } // END while (it != it_end)
       
   } // END filter_CSeqNameList_with_major_reverse_blast_hit
-
+  */
 
   // Input:  CSeqNameList of all query names
   // Putput: CSeqNameList of all query names that have a blast hit in *this.
@@ -1451,7 +1484,7 @@ class CBlast_parser
  
 	//      std::cerr << "query_name " << query_name << " "  << id_of_hit << std::endl;
 	
-	if (id_of_hit == -1u)
+	if (id_of_hit == UINT_MAX)
 	{
 	  std::cerr << "Error: Could not find sequence name: " 
 		    << query_name
@@ -1495,7 +1528,7 @@ class CBlast_parser
     }
 
     CRangeList rl_current_query;
-    Crange     r_all(0, -1u);
+    Crange     r_all(0, UINT_MAX);
     unsigned   cov;
 
     // Move through all hits:
@@ -1580,7 +1613,7 @@ class CBlast_parser
   // Search all blast hits that have a query name that begins identical to the query_beginning_match_str
   // and determine the maximum hit length in this set.
   // More formally: Search for all hits with a query that is identical to query_beginning_match_str
-  // when restricte to the first query_beginning_match_str.size() characters.
+  // when restricted to the first query_beginning_match_str.size() characters.
   int get_max_hit_query_span__matching_beginning1(faststring &query_beginning_match_str)
   {
     int max_len;
@@ -1642,7 +1675,7 @@ class CBlast_parser
       std::cout << "Entering: get_max_hit_query_span__matching_beginning2 with " << query_beginning_match_str << std::endl;
 
     // Find first hit which start with the search string:
-    std::map<faststring, CBlastHit*>::iterator it, it_end;
+    std::multimap<faststring, CBlastHit*>::iterator it, it_end;
     it      = bh_map.lower_bound(query_beginning_match_str);
     it_end  = bh_map.end();
 
@@ -1657,7 +1690,7 @@ class CBlast_parser
     }
 
     // If there is no Blast hit for the query with this name,
-    // it can be but in most cases will not be equal to it_end
+    // the iterator it can be but in most cases will not be equal to it_end
     // The definitive check is that it points to a hit that matches
 
     if (fstrncmp(query_beginning_match_str, (it->second)->get_query_seq_name(),query_beginning_match_str.size() ) != 0)
@@ -1750,7 +1783,7 @@ class CBlast_parser
 
 
   // fill a map with the following information:
-  // For all gi numbers of the target sequences, the map contains the number of occurences of this target.
+  // For all gi numbers of the target sequences, the map contains the number of occurrences of this target.
   void get_gi_occurence_map(std::map<unsigned, unsigned> &gim)
   {
     std::list<CBlastHit*>::iterator it, it_end;

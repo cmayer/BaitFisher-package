@@ -1,4 +1,4 @@
-/*  BaitFisher (version 1.2.7) a program for designing DNA target enrichment baits
+/*  BaitFisher (version 1.2.8) a program for designing DNA target enrichment baits
  *  Copyright 2013-2016 by Christoph Mayer
  *
  *  This source file is part of the BaitFisher-package.
@@ -143,7 +143,7 @@ class CRequiredTaxa
 
   // The dummy parameter is only used to distinguish this and the following constructor, since both have the same parameter list
   // except of this dummy parameter.
-  /* Depricates. Required taxa have to be specified in the parameter file.
+  /* Deprecates. Required taxa have to be specified in the parameter file.
  CRequiredTaxa(faststring infilename, CTaxonNamesDictionary &dict, int &error, int dummy):dictionary(dict),empty(false)
   {
     std::ifstream is(infilename.c_str());
