@@ -237,7 +237,7 @@ void read_and_init_parameters(int argc, char** argv, ostream &logerr)
 
     ValueArg<string> blast_extra_commandline_Arg("", "blast-extra-commandline",
        "When invoking the blast command, extra command line parameters can be passed to the blast program with the aid of this option. As an example, "
-       "this option allows to specify the number of threads the blast program should use. Example: --blast-extra-commandline \"-num_threads 20\" sets the number of threads to 20. ",
+       "this option allows you to specify the number of threads the blast program should use. Example: --blast-extra-commandline \"-num_threads 20\" sets the number of threads to 20. ",
        false, "", "string");
     cmd.add( blast_extra_commandline_Arg );
 
