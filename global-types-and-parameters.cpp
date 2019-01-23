@@ -637,7 +637,7 @@ void print_parameters(FILE *of, const char *s)
   }
   else if (global_mode == 'B')
   {
-    fprintf(of, "%sFilter mode:                                      Blast filter: Remove all bait regions from output that belong to the FEATUE in which one bait has at least two good hits to the reference genome.\n", s);
+    fprintf(of, "%sFilter mode:                                      Blast filter: Remove all bait regions from output that belong to the FEATURE in which one bait has at least two good hits to the reference genome.\n", s);
   }
   else if (global_mode == 'x')
   {
@@ -765,7 +765,7 @@ void print_parameters(ostream &os, const char *s)
   }
   else if (global_mode == 'B')
   {
-    os << s << "Filter mode:                                      Blast filter: Remove all bait regions from output that belong to the FEATUE in which one bait has at least two good hits to the reference genome.\n";
+    os << s << "Filter mode:                                      Blast filter: Remove all bait regions from output that belong to the FEATURE in which one bait has at least two good hits to the reference genome.\n";
   }
   else if (global_mode == 'x')
   {
