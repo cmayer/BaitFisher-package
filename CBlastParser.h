@@ -575,7 +575,7 @@ class CBlast_parser
       line.removeSpacesFront();
       line.removeSpacesBack();
       
-      if (!line.empty() && line[0] != '#') // if not a comment - allows to read the -m 9 in addition to the -m 8 output format
+      if (!line.empty() && line[0] != '#') // if not a comment - allows us to read the -m 9 in addition to the -m 8 output format
       {
 	CBlastHit* p = new CBlastHit(line, counter);
 

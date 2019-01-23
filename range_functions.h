@@ -921,7 +921,7 @@ class CRangeList
   }
 
 
-  // coverage_len allows to specify a range - double check that feature.
+  // coverage_len allows us to specify a range - double check that feature.
   double coverage_rel(Crange bds)
   {
     CRangeList rl_tmp(*this);

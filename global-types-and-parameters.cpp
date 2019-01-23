@@ -237,7 +237,7 @@ void read_and_init_parameters(int argc, char** argv, ostream &logerr)
 
     ValueArg<string> blast_extra_commandline_Arg("", "blast-extra-commandline",
        "When invoking the blast command, extra command line parameters can be passed to the blast program with the aid of this option. As an example, "
-       "this option allows to specify the number of threads the blast program should use. Example: --blast-extra-commandline \"-num_threads 20\" sets the number of threads to 20. ",
+       "this option allows you to specify the number of threads the blast program should use. Example: --blast-extra-commandline \"-num_threads 20\" sets the number of threads to 20. ",
        false, "", "string");
     cmd.add( blast_extra_commandline_Arg );
 
@@ -637,7 +637,7 @@ void print_parameters(FILE *of, const char *s)
   }
   else if (global_mode == 'B')
   {
-    fprintf(of, "%sFilter mode:                                      Blast filter: Remove all bait regions from output that belong to the FEATUE in which one bait has at least two good hits to the reference genome.\n", s);
+    fprintf(of, "%sFilter mode:                                      Blast filter: Remove all bait regions from output that belong to the FEATURE in which one bait has at least two good hits to the reference genome.\n", s);
   }
   else if (global_mode == 'x')
   {
@@ -765,7 +765,7 @@ void print_parameters(ostream &os, const char *s)
   }
   else if (global_mode == 'B')
   {
-    os << s << "Filter mode:                                      Blast filter: Remove all bait regions from output that belong to the FEATUE in which one bait has at least two good hits to the reference genome.\n";
+    os << s << "Filter mode:                                      Blast filter: Remove all bait regions from output that belong to the FEATURE in which one bait has at least two good hits to the reference genome.\n";
   }
   else if (global_mode == 'x')
   {
