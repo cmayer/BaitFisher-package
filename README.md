@@ -61,7 +61,7 @@ BaitFisher can be compiled on all platforms, which provide a C++ compiler that i
 
 Please, unpack the BaitFisher archive you downloaded. 
 
-On the command line enter the BaitFisher-package-master directory. Now type make on the command line. This compiles the BaitFisher as well as the BaitFilter program. The executables of these to programs care called: BaitFisher-v1.2.7 and BaitFilter-v1.0.5. They can be copied on your computer to any place you like. To use these executables they have to be addressed with its full path, or they have to be placed somewhere where in your system path.
+On the command line enter the BaitFisher-package-master directory. Now type "make" on the command line. This compiles the BaitFisher as well as the BaitFilter program. The executables of these to programs care called: BaitFisher-v1.2.7 and BaitFilter-v1.0.5. They can be copied on your computer to any place you like. To use these executables they have to be addressed with its full path, or they have to be placed somewhere where in your system path.
 
 
 Quickstart  <a id="quickstart"></a>
